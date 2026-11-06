@@ -583,7 +583,7 @@ function renderTabs(){
   if(!project()){t.innerHTML="";return}
   const unexp=S.items.filter(i=>info(i).unexplained>0).length;
   const unm=budgetLines().filter(l=>l.match==="none").length;
-  const tabs=[["gantt","Schedule"],["calendar","Calendar"],["list","Task list"],["delays","Delay log"],["ahead","Look-ahead"],["billing","Billing forecast"],["history","History"]];
+  const tabs=[["gantt","Schedule"],["calendar","Calendar"],["list","Task list"],["delays","Delay log"],["ahead","Look-ahead"],["billing","Billing forecast"],["history","History"],["testing","Testing"]];
   t.innerHTML=tabs.map(([k,l])=>'<button class="tab" role="tab" type="button" data-view="'+k+'" aria-selected="'+(S.view===k)+'">'+l+(k==="delays"&&unexp?'<span class="count" title="Items with slip not explained by a logged delay">'+unexp+"</span>":"")+(k==="billing"&&unm?'<span class="count" style="background:var(--warn-soft);color:var(--warn)" title="Budget lines not matched to the schedule">'+unm+"</span>":"")+"</button>").join("");
 }
 function renderToolbar(){
@@ -594,7 +594,7 @@ function renderToolbar(){
     if(S.view==="delays")h+='<button class="btn primary" type="button" data-act="logdelay">+ Log a delay</button>';
     else if(S.view==="billing"){h+='<button class="btn primary" type="button" data-act="budgetUpload">'+(budgetLines().length?"Replace budget":"Upload budget")+"</button>";
       if(budgetLines().length)h+='<button class="btn" type="button" data-act="costUpload" title="QuickBooks Expenses by Vendor, a transaction detail report, or any file with Date and Amount columns">Upload actual costs</button><button class="btn" type="button" data-act="rematch" title="Re-match every line you haven’t set by hand">Re-run auto-match</button><button class="btn danger" type="button" data-act="delBudget">Remove budget</button>'}
-    else if(S.view==="history"){}
+    else if(S.view==="history"||S.view==="testing"){}
     else if(S.view==="calendar")h+='<button class="btn primary" type="button" data-act="new" data-kind="task">+ Task</button><button class="btn" type="button" data-act="newEntry" data-kind="deadline">+ Deadline</button><button class="btn" type="button" data-act="newEntry" data-kind="note">+ Note</button>';
     else h+='<button class="btn primary" type="button" data-act="new" data-kind="phase">+ Phase</button><button class="btn" type="button" data-act="new" data-kind="task">+ Task</button><button class="btn" type="button" data-act="new" data-kind="milestone">+ Milestone / delivery</button>'+(S.view==="gantt"?'<button class="btn" type="button" data-act="newEntry" data-kind="deadline">+ Deadline</button><button class="btn" type="button" data-act="newEntry" data-kind="note">+ Note</button>':"");
     if(S.view==="gantt"||S.view==="list")h+='<button class="btn" type="button" data-act="progress" title="Move unfinished work that should already have happened to the status date">Update progress</button><button class="btn" type="button" data-act="mspImport" title="A schedule PDF (e.g. printed from Microsoft Project), Project XML, or an Excel/CSV export">Import schedule</button>';
@@ -613,7 +613,7 @@ function renderToolbar(){
     if(budgetLines().length)h+='<label class="chk"><input type="checkbox" id="billReview"'+(S.billReview?" checked":"")+"> Needs review only</label>";
       h+='<label class="chk" for="bill_ret">Retainage <input type="number" id="bill_ret" min="0" max="25" step="0.5" value="'+(Number(p.retainagePct)||0)+'"'+dis+"> %</label>"}
   if(S.view==="ahead")h+='<div class="seg" role="group" aria-label="Weeks shown">'+[2,3,4,6].map(n=>'<button type="button" data-ahead="'+n+'" aria-pressed="'+(S.ahead===n)+'">'+n+" wk</button>").join("")+"</div>";
-  h+='<div class="seg" role="group" aria-label="Export this tab"><button type="button" data-export="pdf" title="Save this tab as a PDF">PDF</button><button type="button" data-export="xlsx" title="Save this tab as an Excel workbook">Excel</button></div>';
+  if(S.view!=="testing")h+='<div class="seg" role="group" aria-label="Export this tab"><button type="button" data-export="pdf" title="Save this tab as a PDF">PDF</button><button type="button" data-export="xlsx" title="Save this tab as an Excel workbook">Excel</button></div>';
   // keep focus in search box across re-render
   const hadFocus=document.activeElement&&document.activeElement.id==="q";const pos=hadFocus?document.activeElement.selectionStart:0;
   t.innerHTML=h;
@@ -629,7 +629,7 @@ function renderMain(){
     return;
   }
   if(!S.itemsReady){m.innerHTML='<div class="panel empty"><p>Loading schedule…</p></div>';return}
-  if(!S.items.length&&!["delays","billing","calendar","history"].includes(S.view)){
+  if(!S.items.length&&!["delays","billing","calendar","history","testing"].includes(S.view)){
     m.innerHTML='<div class="panel empty"><h2>Build the schedule</h2><p>Start with phases for the big blocks of work, set a start date and a duration in weeks, then add tasks and deliveries inside each phase.</p>'+(S.canWrite?'<div class="row"><button class="btn primary" type="button" data-act="new" data-kind="phase">+ Add first phase</button></div>':"")+"</div>";return;
   }
   if(S.view==="gantt")m.innerHTML=ganttHTML();
@@ -638,6 +638,7 @@ function renderMain(){
   else if(S.view==="billing")m.innerHTML=billingHTML();
   else if(S.view==="calendar")m.innerHTML=calendarHTML();
   else if(S.view==="history")m.innerHTML=historyHTML();
+  else if(S.view==="testing")m.innerHTML='<div class="panel empty"><h2>Testing</h2><p>Nothing here yet.</p></div>';
   else m.innerHTML=aheadHTML();
   if(S.view==="gantt")scrollGanttToToday();
 }
