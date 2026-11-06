@@ -352,7 +352,7 @@ function info(it){
   const slip=(be!=null&&e!=null)?e-be:0;
   const done=it.status==="Complete";
   const late=!done&&e!=null&&TODAY>e;
-  const logged=S.delays.filter(d=>d.itemId===it.id).reduce((a,d)=>a+(Number(d.days)||0),0);
+  const logged=S.delays.filter(d=>delayIds(d).includes(it.id)).reduce((a,d)=>a+(Number(d.days)||0),0);
   // Slip counts as unexplained only beyond what earlier work pushed onto this item, so one upstream
   // delay (or a late project start) is flagged once, on the item it happened to, not on everything after it.
   const pushed=pushedBy(it);
@@ -384,6 +384,9 @@ function pushedBy(it){
   const ps=projectShift();if(ps.days>0&&spanOf(it).s!==ps.first)m=Math.max(m,ps.days);
   return m;
 }
+// A delay entry can cover several items: itemIds (newer entries) or a single itemId (older ones).
+const delayIds=d=>Array.isArray(d.itemIds)&&d.itemIds.length?d.itemIds:(d.itemId?[d.itemId]:[]);
+function delayItemNames(d){const ids=delayIds(d);const saved=Array.isArray(d.itemNames)?d.itemNames:[d.itemName];return ids.map((id,k)=>{const it=S.items.find(i=>i.id===id);return it?it.name:(saved[k]||"(deleted item)")})}
 function statusPill(it,inf){
   if(inf.late)return '<span class="pill late">Late</span>';
   const m={"Not started":"ns","In progress":"prog","Complete":"done","On hold":"hold"};
@@ -655,7 +658,7 @@ function delaysHTML(){
   if(unexp.length){left+='<div class="callout"><strong>Slip without an explanation</strong><div class="hint" style="color:inherit">These items slipped past their baseline by more than earlier work pushed them and more than has been logged. Open one and log what caused it; items it pushed later clear on their own.</div><div class="dlog" style="margin-top:8px">'+unexp.map(([i,x])=>'<button type="button" class="chip se" data-open="'+esc(i.id)+'">'+esc(i.name)+" · "+x.unexplained+"d unexplained</button>").join("")+"</div></div>"}
   left+="</div>";
   let right='<div class="panel tblwrap"><h2 class="ph-h">Delay log</h2><table><thead><tr><th>Date</th><th>Item</th><th>Cause</th><th class="num">Days</th><th>What happened</th><th>Logged by</th></tr></thead><tbody>';
-  right+=ds_.length?ds_.map(d=>{const it=S.items.find(i=>i.id===d.itemId);return '<tr class="click" data-open-delay="'+esc(d.id)+'"><td class="mono">'+fmt(dn(d.date))+"</td><td>"+esc(it?it.name:(d.itemName||"(deleted item)"))+(it&&it.sub?'<div class="hint">'+esc(it.sub)+"</div>":"")+"</td><td>"+esc(d.cause||"")+'</td><td class="num mono">'+(Number(d.days)||0)+'</td><td class="expl">'+esc(d.explanation||"")+'</td><td class="dim" data-uid="'+esc(d.loggedBy||"")+'">'+esc(nameOf(d.loggedBy))+"</td></tr>"}).join(""):'<tr><td colspan="6" class="dim" style="text-align:center;padding:30px">No delays logged. Use “Log a delay” when something pushes the schedule, and say what caused it.</td></tr>';
+  right+=ds_.length?ds_.map(d=>{const ids=delayIds(d),it=ids.length===1?S.items.find(i=>i.id===ids[0]):null;return '<tr class="click" data-open-delay="'+esc(d.id)+'"><td class="mono">'+fmt(dn(d.date))+"</td><td>"+delayItemNames(d).map(esc).join("<br>")+(it&&it.sub?'<div class="hint">'+esc(it.sub)+"</div>":"")+"</td><td>"+esc(d.cause||"")+'</td><td class="num mono">'+(Number(d.days)||0)+'</td><td class="expl">'+esc(d.explanation||"")+'</td><td class="dim" data-uid="'+esc(d.loggedBy||"")+'">'+esc(nameOf(d.loggedBy))+"</td></tr>"}).join(""):'<tr><td colspan="6" class="dim" style="text-align:center;padding:30px">No delays logged. Use “Log a delay” when something pushes the schedule, and say what caused it.</td></tr>';
   right+="</tbody></table></div>";
   return '<div class="dgrid">'+left+right+"</div>";
 }
@@ -828,12 +831,12 @@ function baseBoxHTML(it){
   return '<span>Baseline: <span class="mono">'+fmt(x.bs)+(it.kind==="milestone"?"":" – "+fmt(x.be))+"</span>"+(x.slip?' · <span class="'+(x.slip>0?"bad-t":"good-t")+'">'+(x.slip>0?"+":"")+x.slip+"d</span>":"")+"</span>"+(S.canWrite?'<button type="button" class="btn sm ghost" data-act="rebase">Set baseline to current dates</button>':"");
 }
 function itemDelayList(it){
-  const list=S.delays.filter(x=>x.itemId===it.id).sort((p,q)=>(dn(q.date)??0)-(dn(p.date)??0));
+  const list=S.delays.filter(x=>delayIds(x).includes(it.id)).sort((p,q)=>(dn(q.date)??0)-(dn(p.date)??0));
   const x=info(it);
   let h="";
   if(x.unexplained>0)h+='<div class="callout" style="margin:0">'+plural(x.unexplained,"day")+" of slip from baseline hasn’t been explained yet.</div>";
   if(!list.length)return h+'<p class="hint" style="margin:0">No delays logged for this item.</p>';
-  return h+'<div class="dlog">'+list.map(e=>'<div class="e"><div class="t"><strong>'+esc(e.cause)+' · <span class="mono">'+(Number(e.days)||0)+'d</span></strong><span class="mono dim">'+fmt(dn(e.date))+'</span></div><div class="expl">'+esc(e.explanation||"")+'</div><div class="hint">Logged by '+esc(nameOf(e.loggedBy))+(e.shift&&e.shift!=="none"?" · dates pushed":"")+"</div></div>").join("")+"</div>";
+  return h+'<div class="dlog">'+list.map(e=>'<div class="e"><div class="t"><strong>'+esc(e.cause)+' · <span class="mono">'+(Number(e.days)||0)+'d</span></strong><span class="mono dim">'+fmt(dn(e.date))+'</span></div><div class="expl">'+esc(e.explanation||"")+'</div>'+(delayIds(e).length>1?'<div class="hint">Also applies to '+esc(delayItemNames(e).filter((n,k)=>delayIds(e)[k]!==it.id).join(", "))+"</div>":"")+'<div class="hint">Logged by '+esc(nameOf(e.loggedBy))+(e.shift&&e.shift!=="none"?" · dates pushed":"")+"</div></div>").join("")+"</div>";
 }
 function itemForm(d){
   const it=d.id?S.items.find(i=>i.id===d.id):null;
@@ -901,23 +904,30 @@ function delayFormHTML(it,prefix){
     '<div class="fld"><label for="'+p+'d_cause">Cause</label><select id="'+p+'d_cause">'+CAUSES.map(c=>"<option>"+esc(c)+"</option>").join("")+"</select></div>"+
     '<div class="fld"><label for="'+p+'d_expl">What happened</label><textarea id="'+p+'d_expl" placeholder="e.g. Tile backordered at distributor, new ship date confirmed by phone with supplier."></textarea></div>'+
     '<div class="lab">Move the schedule</div><div class="radio">'+
-      '<label><input type="radio" name="'+p+'d_shift" value="self" checked> Push this '+(it&&it.kind==="phase"?"phase and its tasks":"item")+" by the delay</label>"+
+      '<label><input type="radio" name="'+p+'d_shift" value="self" checked> '+(it?"Push this "+(it.kind==="phase"?"phase and its tasks":"item"):"Push the picked items")+" by the delay</label>"+
       (it&&it.kind!=="phase"?'<label><input type="radio" name="'+p+'d_shift" value="phase"> Push this item and later items in the same phase</label>':"")+
-      '<label><input type="radio" name="'+p+'d_shift" value="after"> Push this and everything scheduled after it</label>'+
+      '<label><input type="radio" name="'+p+'d_shift" value="after"> Push '+(it?"this":"the picked items")+" and everything scheduled after "+(it?"it":"them")+"</label>"+
       '<label><input type="radio" name="'+p+'d_shift" value="none"> Don’t move dates (I already updated them)</label></div>'+
     '<p class="hint" style="margin:0">Completed items never move. Anything that depends on a moved item moves too. Committed on-site dates move with their task, so confirm the new dates with the sub.</p>'+
     '<button type="button" class="btn primary" data-act="saveDelay" data-prefix="'+p+'" style="width:max-content">Log delay</button></div></details>';
 }
 function logDelayStandalone(){
-  const opts=orderedRows(false).filter(r=>r.it).map(r=>'<option value="'+esc(r.it.id)+'">'+(r.lvl?"   ":"")+esc(r.it.name)+"</option>").join("");
-  return '<div class="dh"><div><div class="eyebrow">Delay log</div><h2>Log a delay</h2></div><button type="button" class="btn ghost" data-act="close" aria-label="Close">✕</button></div><div class="db"><div class="fld"><label for="x_item">Which item was delayed?</label><select id="x_item">'+opts+"</select></div>"+delayFormHTML(null,"x_")+"</div>";
+  return '<div class="dh"><div><div class="eyebrow">Delay log</div><h2>Log a delay</h2></div><button type="button" class="btn ghost" data-act="close" aria-label="Close">✕</button></div><div class="db">'+delayItemPicker("x_",[],"")+delayFormHTML(null,"x_")+"</div>";
 }
+// Checklist of schedule items for a delay entry; one event can hold up several items.
+function delayItemPicker(p,sel,dis){
+  const on=new Set(sel||[]);
+  return '<div class="fld"><span class="lab" style="margin:0">Which items were delayed?</span><input type="text" id="'+p+'pick_q" placeholder="Filter items…" aria-label="Filter items"'+dis+'><div id="'+p+'pick" style="max-height:260px;overflow:auto;border:1px solid var(--line);border-radius:6px;padding:6px 10px;display:flex;flex-direction:column;gap:4px">'+
+    orderedRows(false).filter(r=>r.it).map(r=>'<label class="chk" data-pick-name="'+esc(String(r.it.name||"").toLowerCase())+'" style="'+(r.lvl?"padding-left:18px":"font-weight:600")+'"><input type="checkbox" name="'+p+'pick" value="'+esc(r.it.id)+'"'+(on.has(r.it.id)?" checked":"")+dis+"> "+esc(r.it.name)+"</label>").join("")+
+    '</div><span class="hint">Pick every item this event held up. Its days count once in the totals, and toward each item picked.</span></div>';
+}
+const pickedIds=p=>[...document.querySelectorAll('input[name="'+p+'pick"]:checked')].map(c=>c.value);
 function delayEditForm(d){
   const e=S.delays.find(x=>x.id===d.id);if(!e)return '<div class="dh"><h2>Entry not found</h2><button type="button" class="btn ghost" data-act="close">✕</button></div>';
-  const it=S.items.find(i=>i.id===e.itemId);const dis=S.canWrite?"":" disabled";
-  return '<div class="dh"><div><div class="eyebrow">Delay entry</div><h2>'+esc(it?it.name:e.itemName||"Deleted item")+'</h2></div><button type="button" class="btn ghost" data-act="close" aria-label="Close">✕</button></div><form class="db" id="delayEdit">'+
+  const ids=delayIds(e),it=ids.length===1?S.items.find(i=>i.id===ids[0]):null;const dis=S.canWrite?"":" disabled";const nm=delayItemNames(e);
+  return '<div class="dh"><div><div class="eyebrow">Delay entry</div><h2>'+esc(nm.length>1?plural(nm.length,"item"):(nm[0]||"Deleted item"))+'</h2></div><button type="button" class="btn ghost" data-act="close" aria-label="Close">✕</button></div><form class="db" id="delayEdit">'+
     '<div class="frow"><div class="fld"><label for="e_date">Date logged</label><input type="date" id="e_date" value="'+esc(e.date||"")+'"'+dis+'></div><div class="fld"><label for="e_days">Days</label><input type="number" min="0" id="e_days" value="'+(Number(e.days)||0)+'"'+dis+"></div></div>"+
-    '<div class="fld"><label for="e_cause">Cause</label><select id="e_cause"'+dis+">"+CAUSES.concat(CAUSES.includes(e.cause)?[]:[e.cause]).map(c=>"<option"+(c===e.cause?" selected":"")+">"+esc(c)+"</option>").join("")+"</select></div>"+
+    delayItemPicker("e_",ids,dis)+'<div class="fld"><label for="e_cause">Cause</label><select id="e_cause"'+dis+">"+CAUSES.concat(CAUSES.includes(e.cause)?[]:[e.cause]).map(c=>"<option"+(c===e.cause?" selected":"")+">"+esc(c)+"</option>").join("")+"</select></div>"+
     '<div class="fld"><label for="e_expl">What happened</label><textarea id="e_expl"'+dis+">"+esc(e.explanation||"")+"</textarea></div>"+
     '<p class="hint">Logged by '+esc(nameOf(e.loggedBy))+'. Editing or deleting this entry doesn’t move any dates.</p>'+(it?'<button type="button" class="btn sm" data-open="'+esc(it.id)+'" style="width:max-content">Open '+esc(it.name)+"</button>":"")+"</form>"+
     '<div class="df">'+(S.canWrite?'<button type="button" class="btn danger" data-act="delDelay">Delete entry</button><span class="inl"><button type="button" class="btn" data-act="close">Cancel</button><button type="button" class="btn primary" data-act="saveDelayEdit">Save</button></span>':'<span></span><button type="button" class="btn" data-act="close">Close</button>')+"</div>";
@@ -1180,19 +1190,20 @@ function shiftTargets(it,mode){
 }
 async function saveDelay(prefix){
   const p=prefix||"";
-  const it=p?S.items.find(i=>i.id===val("x_item")):S.items.find(i=>i.id===S.drawer.id);
-  if(!it){toast("Pick the item that was delayed.");return}
+  const its=(p?pickedIds(p).map(id=>S.items.find(i=>i.id===id)):[S.items.find(i=>i.id===S.drawer.id)]).filter(Boolean);
+  if(!its.length){toast("Pick the item that was delayed.");return}
+  const it=its[0],names=its.map(i=>i.name).join(", ");
   const days=Math.max(0,Math.round(Number(val(p+"d_days"))||0));
   const expl=val(p+"d_expl");
   if(!expl){toast("Explain what caused the delay.");$(p+"d_expl").focus();return}
   const r=document.querySelector('input[name="'+p+'d_shift"]:checked');const mode=r?r.value:"self";
-  const entry={projectId:S.pid,itemId:it.id,itemName:it.name,date:val(p+"d_date")||ds(TODAY),days,cause:val(p+"d_cause")||"Other",explanation:expl,shift:days?mode:"none",loggedBy:S.uid||null,createdAt:Date.now()};
+  const entry={projectId:S.pid,itemId:it.id,itemName:it.name,itemIds:its.map(i=>i.id),itemNames:its.map(i=>i.name),date:val(p+"d_date")||ds(TODAY),days,cause:val(p+"d_cause")||"Other",explanation:expl,shift:days?mode:"none",loggedBy:S.uid||null,createdAt:Date.now()};
   const before=S.items.map(i=>Object.assign({},i));
   try{
     await S.db.collection("delays").add(entry);
     let moved=0,mine=null;const changes=new Map();
     if(days&&mode!=="none"){
-      for(const t of shiftTargets(it,mode)){
+      for(const t of new Map(its.flatMap(i=>shiftTargets(i,mode)).map(t=>[t.id,t])).values()){
         if(!t.start)continue; // phases sized by their tasks move with them
         if(t.cons&&t.cons.type==="MSO")continue; // pinned dates stay put
         // push by working days so nothing lands on a weekend and lengths stay the same
@@ -1204,7 +1215,7 @@ async function saveDelay(prefix){
       const plan=planCascade(changes,before);
       for(const [id,up] of plan){if(changes.has(id))continue;await S.db.doc("items/"+id).update(Object.assign({},up,stamp()));moved++;changes.set(id,up)}
     }
-    await logHistory("delay","Logged "+plural(days,"working day")+" of delay on "+it.name+" ("+entry.cause+")"+(moved?" · "+plural(moved,"item")+" moved":""),[...changes].map(([id,up])=>itemChange(before.find(b=>b.id===id),up)));
+    await logHistory("delay","Logged "+plural(days,"working day")+" of delay on "+names+" ("+entry.cause+")"+(moved?" · "+plural(moved,"item")+" moved":""),[...changes].map(([id,up])=>itemChange(before.find(b=>b.id===id),up)));
     if(mine){ // keep the open form in step with the dates just moved
       if(mine.start&&$("f_start"))$("f_start").value=mine.start;
       if(mine.end&&$("f_end"))$("f_end").value=mine.end;
@@ -1572,7 +1583,7 @@ function exportData(view){
     return {title:"Calendar "+keyLabel(mk,true),calGrid:{first:f,last:l},sheets:[{name:"Calendar "+keyLabel(mk),head:["Date","Type","What","Details"],rows:dayRows(f,l)}]}}
   if(view==="ahead"){const a=sunday(TODAY);return {title:S.ahead+"-week look-ahead",sheets:[{name:"Look-ahead",head:["Date","Type","What","Details"],rows:dayRows(a,a+S.ahead*7-1)}]}}
   if(view==="delays"){const ds_=S.delays.slice().sort((x,y)=>(dn(y.date)||0)-(dn(x.date)||0));const by={};ds_.forEach(d=>by[d.cause||"Other"]=(by[d.cause||"Other"]||0)+(Number(d.days)||0));
-    return {title:"Delay log",sheets:[{name:"Delay log",head:["Date","Item","Cause","Working days","What happened","Logged by"],rows:ds_.map(d=>{const it=byId.get(d.itemId);return [xDate(dn(d.date)),it?it.name:(d.itemName||""),d.cause||"",Number(d.days)||0,d.explanation||"",nameOf(d.loggedBy)]})},{name:"Days by cause",head:["Cause","Working days"],rows:Object.entries(by).sort((x,y)=>y[1]-x[1])}]}}
+    return {title:"Delay log",sheets:[{name:"Delay log",head:["Date","Item","Cause","Working days","What happened","Logged by"],rows:ds_.map(d=>[xDate(dn(d.date)),delayItemNames(d).join("; "),d.cause||"",Number(d.days)||0,d.explanation||"",nameOf(d.loggedBy)])},{name:"Days by cause",head:["Cause","Working days"],rows:Object.entries(by).sort((x,y)=>y[1]-x[1])}]}}
   if(view==="billing"){const bc=S.billCache||{rowsData:[],ret:0};const lines=budgetLines();
     const sheets=[{name:"Monthly forecast",money:[1,2,3,4,5,6,7,8,9],head:["Month","Current schedule","incl. profit & OH","Cumulative","Baseline","Baseline cumulative","Ahead / behind","Retainage","Net billing","Actual cost"],rows:bc.rowsData.map(r=>[keyLabel(r.k,true)+(r.k<monthKey(TODAY)&&hasBilled()?" (billed)":""),Math.round(r.c),Math.round(r.m||0),Math.round(r.cc),Math.round(r.b),Math.round(r.cb),Math.round(r.cc-r.cb),Math.round(r.c*bc.ret/100),Math.round(r.c*(1-bc.ret/100)),r.ac!=null?Math.round(r.ac):""])}];
     if(lines.length)sheets.push({name:"Budget lines",money:[2,3,4],head:["Code","Description","Scheduled value","Billed to date","Left to bill","Bills with","Match"],rows:lines.map(l=>{const it=l.itemId&&byId.get(l.itemId);return [l.code||"",l.desc,Number(l.amount)||0,Number(l.billed)||0,Math.max(0,(Number(l.amount)||0)-(hasBilled()?Number(l.billed)||0:0)),l.method==="item"?(it?it.name:"(deleted)"):({project:"Spread over whole project",start:"First month",end:"Final month",exclude:"Excluded",markup:"Profit / overhead with monthly costs"}[l.method]||l.method),({auto:"Auto",manual:"Set by hand",none:"Needs review"}[l.match]||"")]})});
@@ -2186,7 +2197,7 @@ document.addEventListener("click",e=>{
   else if(act==="delItem"){const it=S.items.find(i=>i.id===S.drawer.id);const n=it&&it.kind==="phase"?childrenOf(it.id).length:0;confirmClick(a,"di",n?"Delete phase + "+plural(n,"item")+"?":"Click again to delete",()=>deleteItem(S.drawer.id))}
   else if(act==="delProj")confirmClick(a,"dp","Click again: deletes everything",()=>deleteProject(S.drawer.id));
   else if(act==="delDelay")confirmClick(a,"dd","Click again to delete",async()=>{try{await S.db.doc("delays/"+S.drawer.id).delete();closeDrawer();toast("Entry deleted")}catch(err){dbErr(err)}});
-  else if(act==="saveDelayEdit")(async()=>{const expl=val("e_expl");if(!expl){toast("Explain what caused the delay.");return}try{await S.db.doc("delays/"+S.drawer.id).update({date:val("e_date")||ds(TODAY),days:Math.max(0,Math.round(Number(val("e_days"))||0)),cause:val("e_cause"),explanation:expl});closeDrawer();toast("Entry saved")}catch(err){dbErr(err)}})();
+  else if(act==="saveDelayEdit")(async()=>{const expl=val("e_expl");if(!expl){toast("Explain what caused the delay.");return}const its=pickedIds("e_").map(id=>S.items.find(i=>i.id===id)).filter(Boolean);if(!its.length){toast("Pick at least one item.");return}try{await S.db.doc("delays/"+S.drawer.id).update({itemId:its[0].id,itemName:its[0].name,itemIds:its.map(i=>i.id),itemNames:its.map(i=>i.name),date:val("e_date")||ds(TODAY),days:Math.max(0,Math.round(Number(val("e_days"))||0)),cause:val("e_cause"),explanation:expl});closeDrawer();toast("Entry saved")}catch(err){dbErr(err)}})();
   else if(act==="osAdd"){const v=val("os_one");if(!v){toast("Pick a date to add.");return}if(!S.drawer.onsite.includes(v))S.drawer.onsite.push(v);$("os_one").value="";renderOnsite()}
   else if(act==="osRange"||act==="osFill"){
     let a0,b0,wdOnly;
@@ -2237,7 +2248,7 @@ document.addEventListener("change",e=>{
     S.db.doc("projects/"+S.pid).update(up).catch(dbErr);
   }
 });
-let qT;document.addEventListener("input",e=>{if(e.target.id==="q"){clearTimeout(qT);const v=e.target.value;qT=setTimeout(()=>{S.q=v.trim();renderMain()},150)}});
+let qT;document.addEventListener("input",e=>{if(e.target.id&&/pick_q$/.test(e.target.id)){const q=e.target.value.trim().toLowerCase();const box=$(e.target.id.slice(0,-2));if(box)box.querySelectorAll("[data-pick-name]").forEach(l=>{l.hidden=!!q&&!l.dataset.pickName.includes(q)});return}if(e.target.id==="q"){clearTimeout(qT);const v=e.target.value;qT=setTimeout(()=>{S.q=v.trim();renderMain()},150)}});
 
 init();
 })();
