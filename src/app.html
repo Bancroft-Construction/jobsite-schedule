@@ -185,7 +185,7 @@ td.num,th.num{text-align:right}
 .dchip button{border:0;background:none;cursor:pointer;color:var(--muted);font-size:15px;line-height:1;padding:0 4px}
 .inl{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .dur{display:flex;gap:6px}
-.dur input{width:80px}
+.dur input{flex:1 1 0;min-width:48px;width:auto}.dur select{flex:0 0 108px;width:108px}.frow:has(.dur){grid-template-columns:1fr 1.4fr 1fr}@media (max-width:540px){.frow:has(.dur){grid-template-columns:repeat(auto-fit,minmax(130px,1fr))}}
 .radio{display:flex;flex-direction:column;gap:6px;font-size:14px}
 .radio label{display:flex;gap:8px;align-items:flex-start;cursor:pointer}
 .dlog{display:flex;flex-direction:column;gap:8px}
