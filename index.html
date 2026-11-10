@@ -986,7 +986,7 @@ function itemForm(d){
   const kind=it?it.kind:d.kind;
   const d0=dn(d.date)!=null?dn(d.date):TODAY; // a day picked on the calendar
   const w0=nextWorkday(d0);
-  const v=it||{kind,name:"",phaseId:d.phaseId||"",status:"Not started",pct:0,start:ds(w0),end:kind==="milestone"?null:ds(addWorkdays(w0,kind==="task"&&d.date?4:19)),onsite:[]};
+  const v=it||{kind,name:"",phaseId:d.phaseId||"",status:"Not started",pct:0,start:ds(w0),end:kind==="milestone"?null:ds(kind==="task"?w0:addWorkdays(w0,19)),onsite:[]};
   const ro=!S.canWrite;const dis=ro?" disabled":"";
   const s=dn(v.start),e=kind==="milestone"?s:dn(v.end);
   // duration counts working days (a week = 5) unless the item counts calendar days (a week = 7)
