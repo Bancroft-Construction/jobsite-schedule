@@ -388,7 +388,7 @@ button.chip.crew-lucas,button.chip.crew-jason,button.chip.crew-both{border-left:
 .chip.dl{background:var(--panel-2);border-left:3px solid var(--ink);color:var(--ink);font-weight:600}
 .chip.dl.missed,.chip.dl.overdue{background:var(--bad-soft);border-left-color:var(--bad);color:var(--bad)}
 .chip.dl.done{background:var(--good-soft);border-left-color:var(--good);color:var(--good);text-decoration:line-through}
-.chip.nt{background:var(--warn-soft);border-left:3px solid var(--warn);color:var(--ink)}
+.chip.nt{background:var(--warn-soft);border-left:3px solid var(--warn);color:var(--ink)}.tm{font-family:var(--f-mono);font-weight:600;font-size:.9em;white-space:nowrap}
 .dlm{position:absolute;top:5px;bottom:5px;width:2px;background:var(--ink);cursor:pointer;z-index:2}
 .dlm::after{content:"";position:absolute;top:0;left:2px;border-left:8px solid currentColor;border-top:4px solid transparent;border-bottom:4px solid transparent;color:var(--ink)}
 .dlm.missed,.dlm.overdue{background:var(--bad)}.dlm.missed::after,.dlm.overdue::after{color:var(--bad)}
@@ -466,7 +466,7 @@ const fmt=(n,o)=>n==null?"—":new Date(n*DAY).toLocaleDateString(undefined,Obje
 const fmtY=n=>fmt(n,{year:"numeric"});
 const fmtW=n=>fmt(n,{weekday:"short"});
 const plural=(n,w)=>n+" "+w+(Math.abs(n)===1?"":"s");
-const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));const fmtT=t=>{if(!t)return "";const p=String(t).split(":").map(Number);const h=p[0],m=p[1]||0;return (h%12||12)+(m?":"+String(m).padStart(2,"0"):"")+(h<12?"am":"pm")};const timeTxt=o=>o&&o.time?fmtT(o.time)+(o.timeEnd?"–"+fmtT(o.timeEnd):""):"";const timeTag=o=>{const t=timeTxt(o);return t?'<span class="tm">'+t+"</span> ":""};
 
 /* ---------- state ---------- */
 const LS={get(k,d){try{const v=localStorage.getItem("jsb."+k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem("jsb."+k,JSON.stringify(v))}catch(e){}}};
@@ -703,7 +703,7 @@ function ganttHTML(){
   const rs=orderedRows(true);const byIdAll=new Map(S.items.map(i=>[i.id,i]));
   // deadline flags and note markers
   const mark=e=>{const n=dn(e.date);if(n==null||n<a||n>b)return "";const x=(n-a)*dw+dw/2;const st=entryState(e);
-    const tip=esc((e.kind==="deadline"?"Deadline ":"Note ")+fmt(n)+": "+e.title+(e.kind==="deadline"?" · "+ENTRY_TXT[st]:""));
+    const tip=esc((e.kind==="deadline"?"Deadline ":"Note ")+fmt(n)+(timeTxt(e)?" "+timeTxt(e):"")+": "+e.title+(e.kind==="deadline"?" · "+ENTRY_TXT[st]:""));
     return e.kind==="deadline"?'<div class="dlm '+st+'" style="left:'+(x-1)+'px" data-entry="'+esc(e.id)+'" title="'+tip+'"></div>':'<div class="ntm" style="left:'+x+'px" data-entry="'+esc(e.id)+'" title="'+tip+'"></div>'};
   const loose=S.entries.filter(e=>!e.itemId||!S.items.some(i=>i.id===e.itemId));
   if(loose.length){rows+='<div class="grow task" style="cursor:default"><div class="glabel"><span class="nm">Deadlines &amp; notes</span></div><div class="gtrack" style="width:'+W+"px;"+bg+'">'+loose.map(mark).join("")+"</div></div>";yTop+=36}
@@ -721,7 +721,7 @@ function ganttHTML(){
     else if(x.slip>0)lab+='<span class="flag '+(x.unexplained?"warn":"bad")+'" title="'+(x.unexplained?plural(x.unexplained,"day")+" of slip not explained by a logged delay":"Slipped from baseline")+'">+'+x.slip+"d</span>";
     let tr="";
     const fl=floatOf(it),crit=S.showCrit&&isCritical(it);
-    const tip=esc((it.name||"")+(it.sub?" · "+it.sub:"")+" — "+fmt(x.s)+(it.kind!=="milestone"?" to "+fmt(x.e):"")+(x.slip?" (baseline "+fmt(x.be)+", "+(x.slip>0?"+":"")+x.slip+"d)":"")+(fl!=null?" · float "+fl+"d"+(fl<=0?" (critical)":""):""));
+    const tip=esc((it.name||"")+(it.sub?" · "+it.sub:"")+" — "+fmt(x.s)+(timeTxt(it)?" "+timeTxt(it):"")+(it.kind!=="milestone"?" to "+fmt(x.e):"")+(x.slip?" (baseline "+fmt(x.be)+", "+(x.slip>0?"+":"")+x.slip+"d)":"")+(fl!=null?" · float "+fl+"d"+(fl<=0?" (critical)":""):""));
     if(it.kind==="milestone"){
       if(x.bs!=null&&x.bs!==x.s)tr+='<div class="ms bl-ms" style="left:'+((x.bs-a)*dw+dw/2-6)+'px" title="Baseline '+fmt(x.bs)+'"></div>';
       if(x.s!=null)tr+='<div class="ms '+stClass(it)+(x.late?" late":"")+(crit?" crit":"")+'" style="left:'+((x.s-a)*dw+dw/2-7.5)+'px" title="'+tip+'"></div>';
@@ -783,7 +783,7 @@ function listHTML(){
     const pct=it.status==="Complete"?100:(Number(it.pct)||0);
     const slipTxt=x.slip>0?'<span class="bad-t">+'+x.slip+"d</span>"+(x.unexplained?'<div class="hint" style="color:var(--warn)">'+x.unexplained+"d unexplained</div>":""):x.slip<0?'<span class="good-t">'+x.slip+"d</span>":'<span class="dim">0</span>';
     if(it.kind==="phase")h+='<tr class="ph click" data-open="'+esc(it.id)+'"><td>'+esc(it.name)+'</td><td></td><td></td><td class="mono">'+fmt(x.s)+'</td><td class="mono">'+fmt(x.e)+'</td><td class="num mono">'+(dur??"—")+'</td><td class="mono">'+fmt(x.be)+'</td><td class="num mono">'+slipTxt+"</td>"+flTxt+"<td>"+statusPill(it,x)+'</td><td class="num mono">'+pct+"</td><td></td></tr>";
-    else h+='<tr class="click" data-open="'+esc(it.id)+'"><td style="padding-left:22px">'+(it.kind==="milestone"?"◆ ":"")+esc(it.name)+(linksOf(it).length?'<div class="hint">After: '+esc(linksOf(it).map(l=>linkLabel(l,byIdL.get(l.id))).join(", "))+"</div>":"")+"</td><td>"+esc(it.category||"")+"</td><td>"+esc(it.sub||"")+(it.contact?'<div class="hint">'+esc(it.contact)+"</div>":"")+'</td><td class="mono">'+fmt(x.s)+'</td><td class="mono">'+(it.kind==="milestone"?"":fmt(x.e))+'</td><td class="num mono">'+(it.kind==="milestone"?"":dur??"—")+'</td><td class="mono">'+fmt(x.be)+'</td><td class="num mono">'+slipTxt+"</td>"+flTxt+"<td>"+statusPill(it,x)+'</td><td class="num mono">'+(it.kind==="milestone"?"":pct)+'</td><td class="mono">'+(os.length?os.length+" day"+(os.length>1?"s":"")+(next!=null?'<div class="hint">next '+fmt(next)+"</div>":""):'<span class="dim">—</span>')+"</td></tr>";
+    else h+='<tr class="click" data-open="'+esc(it.id)+'"><td style="padding-left:22px">'+(it.kind==="milestone"?"◆ ":"")+esc(it.name)+(linksOf(it).length?'<div class="hint">After: '+esc(linksOf(it).map(l=>linkLabel(l,byIdL.get(l.id))).join(", "))+"</div>":"")+"</td><td>"+esc(it.category||"")+"</td><td>"+esc(it.sub||"")+(it.contact?'<div class="hint">'+esc(it.contact)+"</div>":"")+'</td><td class="mono">'+fmt(x.s)+(timeTxt(it)?'<div class="hint">'+timeTxt(it)+"</div>":"")+'</td><td class="mono">'+(it.kind==="milestone"?"":fmt(x.e))+'</td><td class="num mono">'+(it.kind==="milestone"?"":dur??"—")+'</td><td class="mono">'+fmt(x.be)+'</td><td class="num mono">'+slipTxt+"</td>"+flTxt+"<td>"+statusPill(it,x)+'</td><td class="num mono">'+(it.kind==="milestone"?"":pct)+'</td><td class="mono">'+(os.length?os.length+" day"+(os.length>1?"s":"")+(next!=null?'<div class="hint">next '+fmt(next)+"</div>":""):'<span class="dim">—</span>')+"</td></tr>";
   }
   if(!rs.length)h+='<tr><td colspan="12" class="dim" style="text-align:center;padding:30px">No items match the current filter.</td></tr>';
   return h+"</tbody></table></div>";
@@ -819,9 +819,9 @@ function aheadHTML(){
   for(const it of S.items){
     const x=info(it);
     (it.onsite||[]).forEach(d=>{const n=dn(d);if(n!=null)add(n,{o:0,h:'<button type="button" class="chip on" data-open="'+esc(it.id)+'"><strong>'+esc(it.sub||"Crew")+"</strong><br>"+esc(it.name)+"</button>"})});
-    if(it.kind==="milestone"&&x.s!=null)add(x.s,{o:1,h:'<button type="button" class="chip ms" data-open="'+esc(it.id)+'">◆ '+esc(it.name)+(x.slip>0?' <span class="bad-t">+'+x.slip+"d</span>":"")+"</button>"});
+    if(it.kind==="milestone"&&x.s!=null)add(x.s,{o:1,h:'<button type="button" class="chip ms" data-open="'+esc(it.id)+'">◆ '+timeTag(it)+esc(it.name)+(x.slip>0?' <span class="bad-t">+'+x.slip+"d</span>":"")+"</button>"});
     if(it.kind==="task"){
-      if(x.s!=null)add(x.s,{o:2,h:'<button type="button" class="chip se" data-open="'+esc(it.id)+'">Starts: '+esc(it.name)+"</button>"});
+      if(x.s!=null)add(x.s,{o:2,h:'<button type="button" class="chip se" data-open="'+esc(it.id)+'">Starts: '+timeTag(it)+esc(it.name)+"</button>"});
       if(x.e!=null&&x.e!==x.s)add(x.e,{o:3,h:'<button type="button" class="chip se" data-open="'+esc(it.id)+'">Due: '+esc(it.name)+"</button>"});
     }
   }
@@ -851,7 +851,7 @@ function entryState(e){ // note | done | missed (linked item now finishes after 
 const ENTRY_TXT={missed:"Schedule misses this",overdue:"Past due",done:"Met",ok:"Upcoming"};
 function entryChip(e){
   const st=entryState(e);const it=e.itemId&&S.items.find(i=>i.id===e.itemId);
-  return '<button type="button" class="chip '+(e.kind==="deadline"?"dl "+st:"nt")+crewClass({name:e.title})+'" data-entry="'+esc(e.id)+'" title="'+esc((e.kind==="deadline"?"Deadline":"Note")+": "+e.title+(it?" · "+it.name:"")+(e.kind==="deadline"?" · "+ENTRY_TXT[st]:""))+'">'+(e.kind==="deadline"?"Due: ":"")+esc(e.title)+"</button>";
+  return '<button type="button" class="chip '+(e.kind==="deadline"?"dl "+st:"nt")+crewClass({name:e.title})+'" data-entry="'+esc(e.id)+'" title="'+esc((e.kind==="deadline"?"Deadline":"Note")+": "+e.title+(it?" · "+it.name:"")+(e.kind==="deadline"?" · "+ENTRY_TXT[st]:""))+'">'+(e.kind==="deadline"?"Due: ":"")+timeTag(e)+esc(e.title)+"</button>";
 }
 const entriesOn=n=>S.entries.filter(e=>dn(e.date)===n).sort((a,b)=>(a.kind===b.kind?0:a.kind==="deadline"?-1:1));
 
@@ -886,13 +886,13 @@ function calendarHTML(){
       if(CAL.hol.has(n))chips+='<span class="chip hol">'+esc(CAL.hol.get(n))+"</span>";
       entriesOn(n).forEach(e=>chips+=entryChip(e));
       S.items.forEach(it=>{
-        if(it.kind==="milestone"&&dn(it.start)===n)chips+='<button type="button" class="chip ms" data-open="'+esc(it.id)+'">◆ '+esc(it.name)+"</button>";
+        if(it.kind==="milestone"&&dn(it.start)===n)chips+='<button type="button" class="chip ms" data-open="'+esc(it.id)+'">◆ '+timeTag(it)+esc(it.name)+"</button>";
         if((it.onsite||[]).includes(ds(n)))chips+='<button type="button" class="chip on'+crewClass(it)+'" data-open="'+esc(it.id)+'" title="'+esc(it.name)+'">On site: '+esc(it.sub||it.name)+"</button>";
       });
       h+='<div class="cal-day'+(n<first||n>last?" out":"")+(d===0||d===6?" we":"")+(CAL.hol.has(n)?" holday":"")+(n===TODAY?" td":"")+'" data-calday="'+ds(n)+'"><span class="cal-dn">'+(date.getUTCDate()===1?fmt(n):date.getUTCDate())+'</span><div class="cal-lanes" style="height:'+(lanes.length*22)+'px"></div>'+chips+"</div>";
     }
     segs.forEach(sg=>{const it=sg.it,x=info(it);
-      h+='<button type="button" class="cal-bar '+stClass(it)+(x.late?" late":"")+(it.kind==="phase"?" ph":"")+crewClass(it)+'" data-open="'+esc(it.id)+'" style="top:'+(28+sg.l*22)+"px;left:calc("+(sg.a/7*100).toFixed(4)+"% + 3px);width:calc("+((sg.b-sg.a+1)/7*100).toFixed(4)+'% - 6px)" title="'+esc(it.name+(it.sub?" · "+it.sub:"")+" — "+fmt(x.s)+" to "+fmt(x.e))+'">'+(sg.cl?"‹ ":"")+esc(it.name)+(it.sub?' <span class="dim">· '+esc(it.sub)+"</span>":"")+(sg.cr?" ›":"")+"</button>"});
+      h+='<button type="button" class="cal-bar '+stClass(it)+(x.late?" late":"")+(it.kind==="phase"?" ph":"")+crewClass(it)+'" data-open="'+esc(it.id)+'" style="top:'+(28+sg.l*22)+"px;left:calc("+(sg.a/7*100).toFixed(4)+"% + 3px);width:calc("+((sg.b-sg.a+1)/7*100).toFixed(4)+'% - 6px)" title="'+esc(it.name+(it.sub?" · "+it.sub:"")+" — "+fmt(x.s)+" to "+fmt(x.e))+'">'+(sg.cl?"‹ ":timeTag(it))+esc(it.name)+(it.sub?' <span class="dim">· '+esc(it.sub)+"</span>":"")+(sg.cr?" ›":"")+"</button>"});
     h+="</div>";
   }
   h+='</div></div><div class="legend"><span><i class="sw" style="background:color-mix(in srgb,var(--steel) 30%,var(--panel));border-left:3px solid var(--steel)"></i>Task (color = status)</span>'+(crewProject()?'<span><i class="sw" style="background:color-mix(in srgb,#f57c00 55%,var(--panel));border-left:3px solid #f57c00"></i>Lucas</span><span><i class="sw" style="background:color-mix(in srgb,#2c8a57 55%,var(--panel));border-left:3px solid #2c8a57"></i>Jason</span><span><i class="sw" style="background:color-mix(in srgb,#1e73d8 55%,var(--panel));border-left:3px solid #1e73d8"></i>Jason &amp; Lucas</span>':"")+'<span><i class="sw" style="background:var(--bad-soft);border-left:3px solid var(--bad)"></i>Deadline the schedule misses or is past due</span><span><i class="sw" style="background:var(--panel-2);border-left:3px solid var(--ink)"></i>Upcoming deadline</span><span><i class="sw" style="background:var(--warn-soft);border-left:3px solid var(--warn)"></i>Note</span><span><i class="sw" style="background:var(--accent)"></i>Sub on site</span><span><i class="sw" style="background:var(--steel)"></i>◆ Milestone</span></div></div>';
@@ -904,8 +904,8 @@ function dayForm(d){
   const os=S.items.filter(i=>(i.onsite||[]).includes(d.date));const ents=entriesOn(n);
   let h='<div class="dh"><div><div class="eyebrow">'+esc(fmtW(n))+'</div><h2>'+esc(fmtY(n))+'</h2></div><button type="button" class="btn ghost" data-act="close" aria-label="Close">✕</button></div><div class="db">';
   if(!ro)h+='<div class="inl"><button type="button" class="btn primary sm" data-act="dayNew" data-kind="task">+ Task starting this day</button><button type="button" class="btn sm" data-act="dayNew" data-kind="deadline">+ Deadline</button><button type="button" class="btn sm" data-act="dayNew" data-kind="note">+ Note</button></div>';
-  h+='<div class="sect"><h3>Deadlines &amp; notes</h3>'+(ents.length?'<div class="dlog">'+ents.map(e=>'<div class="e"><div class="t"><strong>'+(e.kind==="deadline"?"Deadline: ":"Note: ")+esc(e.title)+"</strong>"+(e.kind==="deadline"?'<span class="pill '+({missed:"late",overdue:"late",done:"done",ok:"ns"}[entryState(e)])+'">'+ENTRY_TXT[entryState(e)]+"</span>":"")+"</div>"+(e.text?'<div class="expl">'+esc(e.text)+"</div>":"")+'<button type="button" class="btn sm ghost" data-entry="'+esc(e.id)+'">Open</button></div>').join("")+"</div>":'<p class="hint" style="margin:0">None on this day.</p>')+"</div>";
-  h+='<div class="sect"><h3>Work scheduled</h3>'+(act.length?'<div class="dates">'+act.map(i=>'<button type="button" class="chip se" data-open="'+esc(i.id)+'">'+esc(i.name)+(i.sub?" · "+esc(i.sub):"")+"</button>").join("")+"</div>":'<p class="hint" style="margin:0">Nothing scheduled.</p>')+"</div>";
+  h+='<div class="sect"><h3>Deadlines &amp; notes</h3>'+(ents.length?'<div class="dlog">'+ents.map(e=>'<div class="e"><div class="t"><strong>'+(e.kind==="deadline"?"Deadline: ":"Note: ")+timeTag(e)+esc(e.title)+"</strong>"+(e.kind==="deadline"?'<span class="pill '+({missed:"late",overdue:"late",done:"done",ok:"ns"}[entryState(e)])+'">'+ENTRY_TXT[entryState(e)]+"</span>":"")+"</div>"+(e.text?'<div class="expl">'+esc(e.text)+"</div>":"")+'<button type="button" class="btn sm ghost" data-entry="'+esc(e.id)+'">Open</button></div>').join("")+"</div>":'<p class="hint" style="margin:0">None on this day.</p>')+"</div>";
+  h+='<div class="sect"><h3>Work scheduled</h3>'+(act.length?'<div class="dates">'+act.map(i=>'<button type="button" class="chip se" data-open="'+esc(i.id)+'">'+(dn(i.start)===n?timeTag(i):"")+esc(i.name)+(i.sub?" · "+esc(i.sub):"")+"</button>").join("")+"</div>":'<p class="hint" style="margin:0">Nothing scheduled.</p>')+"</div>";
   if(os.length)h+='<div class="sect"><h3>Subs on site</h3><div class="dates">'+os.map(i=>'<button type="button" class="chip on" data-open="'+esc(i.id)+'"><strong>'+esc(i.sub||"Crew")+"</strong> · "+esc(i.name)+"</button>").join("")+"</div></div>";
   return h+'</div><div class="df"><span></span><button type="button" class="btn" data-act="close">Close</button></div>';
 }
@@ -918,7 +918,7 @@ function entryForm(d){
   else if(e&&st==="overdue")h+='<div class="callout" style="margin:0">This deadline has passed and isn’t marked met.</div>';
   h+='<div class="frow"><div class="fld"><label for="en_kind">Type</label><select id="en_kind"'+dis+'><option value="deadline"'+(v.kind==="deadline"?" selected":"")+'>Deadline</option><option value="note"'+(v.kind==="note"?" selected":"")+'>Note</option></select></div><div class="fld"><label for="en_date">Date</label><input type="date" id="en_date" value="'+esc(v.date||"")+'"'+dis+"></div></div>";
   h+='<div class="fld"><label for="en_title">Title</label><input type="text" id="en_title" value="'+esc(v.title)+'" placeholder="'+(v.kind==="deadline"?"e.g. Cabinet shop drawings approved":"e.g. Owner walkthrough moved to 2 pm")+'"'+dis+"></div>";
-  h+='<div class="fld"><label for="en_item">Linked to</label><select id="en_item"'+dis+'><option value="">Not linked to a task</option>'+orderedRows(false).filter(r=>r.it).map(r=>'<option value="'+esc(r.it.id)+'"'+(r.it.id===v.itemId?" selected":"")+">"+(r.lvl?"   ":"")+esc(r.it.name)+"</option>").join("")+'</select><span class="hint">A linked deadline is flagged when that task is scheduled to finish after it.</span></div>';
+  h+='<div class="frow"><div class="fld"><label for="en_time">Time</label><input type="time" id="en_time" value="'+esc(v.time||"")+'"'+dis+'></div><div class="fld"><label for="en_time2">Window ends (optional)</label><input type="time" id="en_time2" value="'+esc(v.timeEnd||"")+'"'+dis+"></div></div>";h+='<div class="fld"><label for="en_item">Linked to</label><select id="en_item"'+dis+'><option value="">Not linked to a task</option>'+orderedRows(false).filter(r=>r.it).map(r=>'<option value="'+esc(r.it.id)+'"'+(r.it.id===v.itemId?" selected":"")+">"+(r.lvl?"   ":"")+esc(r.it.name)+"</option>").join("")+'</select><span class="hint">A linked deadline is flagged when that task is scheduled to finish after it.</span></div>';
   h+='<div class="fld"><label for="en_text">Details</label><textarea id="en_text"'+dis+">"+esc(v.text||"")+"</textarea></div>";
   h+='<label class="chk" id="en_doneWrap"'+(v.kind==="deadline"?"":" hidden")+'><input type="checkbox" id="en_done"'+(v.done?" checked":"")+dis+"> Deadline met</label>";
   h+="</form>";
@@ -929,11 +929,11 @@ async function saveEntry(){
   const d=S.drawer;const e=d.id?S.entries.find(x=>x.id===d.id):null;
   const title=val("en_title"),date=val("en_date");
   if(!title){toast("Give it a title.");$("en_title").focus();return}
-  if(!date){toast("Pick a date.");$("en_date").focus();return}
+  if(!date){toast("Pick a date.");$("en_date").focus();return}if(val("en_time")&&val("en_time2")&&val("en_time2")<=val("en_time")){toast("The window ends before it starts.");$("en_time2").focus();return}
   const kind=val("en_kind")||"note";
-  const body={kind,title,date,itemId:val("en_item")||"",text:val("en_text")||"",done:kind==="deadline"&&!!($("en_done")&&$("en_done").checked),...stamp()};
+  const body={kind,title,date,itemId:val("en_item")||"",text:val("en_text")||"",done:kind==="deadline"&&!!($("en_done")&&$("en_done").checked),time:val("en_time")||"",timeEnd:val("en_time")?(val("en_time2")||""):"",...stamp()};
   try{
-    if(e){await S.db.doc("entries/"+e.id).update(body);const b0={},a0={};["kind","title","date","itemId","text","done"].forEach(k=>{if(!same(e[k],body[k])){b0[k]=e[k]??null;a0[k]=body[k]}});if(Object.keys(a0).length)await logHistory("entry","Edited "+(kind==="deadline"?"deadline":"note")+" "+title,[{coll:"entries",id:e.id,name:title,before:b0,after:a0}])}
+    if(e){await S.db.doc("entries/"+e.id).update(body);const b0={},a0={};["kind","title","date","itemId","text","done","time","timeEnd"].forEach(k=>{if(!same(e[k],body[k])){b0[k]=e[k]??null;a0[k]=body[k]}});if(Object.keys(a0).length)await logHistory("entry","Edited "+(kind==="deadline"?"deadline":"note")+" "+title,[{coll:"entries",id:e.id,name:title,before:b0,after:a0}])}
     else{const full=Object.assign(body,{projectId:S.pid,createdAt:Date.now(),createdBy:S.uid||null});const ref=await S.db.collection("entries").add(full);await logHistory("entry","Added "+(kind==="deadline"?"deadline":"note")+" "+title,[{coll:"entries",id:ref.id,name:title,before:null,after:full}])}
     closeDrawer();toast((kind==="deadline"?"Deadline":"Note")+(e?" saved":" added"));
   }catch(err){dbErr(err)}
@@ -999,7 +999,7 @@ function itemForm(d){
   // dates
   if(kind==="milestone")h+='<div class="frow"><div class="fld"><label for="f_start">Date</label><input type="date" id="f_start" value="'+esc(v.start||"")+'"'+dis+"></div></div>";
   else h+='<div class="frow"><div class="fld"><label for="f_start">Start</label><input type="date" id="f_start" value="'+esc(v.start||"")+'"'+dis+'></div><div class="fld"><label for="f_dur">Duration</label><div class="dur"><input type="number" min="1" id="f_dur" value="'+(durDays?(useWeeks?durDays/per:durDays):"")+'"'+dis+'><select id="f_unit" aria-label="Duration unit"'+dis+'><option value="w"'+(useWeeks?" selected":"")+'>weeks</option><option value="d"'+(useWeeks?"":" selected")+'>days</option></select></div></div><div class="fld"><label for="f_end">End</label><input type="date" id="f_end" value="'+esc(v.end||"")+'"'+dis+"></div></div>"+(kind==="phase"?'<p class="hint" style="margin:-6px 0 0">Leave dates blank to size the phase from its tasks.</p>':"");
-  h+='<div class="frow"><div class="fld"><label for="f_status">Status</label><select id="f_status"'+dis+">"+STATUSES.map(x=>"<option"+(x===(v.status||"Not started")?" selected":"")+">"+x+"</option>").join("")+"</select></div>";
+  if(kind!=="phase")h+='<div class="frow"><div class="fld"><label for="f_time">'+(kind==="milestone"?"Delivery window from":"Start time")+'</label><input type="time" id="f_time" value="'+esc(v.time||"")+'"'+dis+'></div><div class="fld"><label for="f_time2">'+(kind==="milestone"?"Delivery window to":"Window ends (optional)")+'</label><input type="time" id="f_time2" value="'+esc(v.timeEnd||"")+'"'+dis+"></div></div>";h+='<div class="frow"><div class="fld"><label for="f_status">Status</label><select id="f_status"'+dis+">"+STATUSES.map(x=>"<option"+(x===(v.status||"Not started")?" selected":"")+">"+x+"</option>").join("")+"</select></div>";
   if(kind!=="milestone")h+='<div class="fld"><label for="f_pct">% complete</label><input type="number" min="0" max="100" step="5" id="f_pct" value="'+(Number(v.pct)||0)+'"'+dis+"></div>";
   h+="</div>";
   if(it)h+='<div class="frow"><div class="fld"><label for="f_as">Actual start</label><input type="date" id="f_as" value="'+esc(v.actualStart||"")+'"'+dis+"></div>"+(kind!=="milestone"?'<div class="fld"><label for="f_ae">Actual finish</label><input type="date" id="f_ae" value="'+esc(v.actualEnd||"")+'"'+dis+"></div>":"")+"</div>";
@@ -1292,7 +1292,7 @@ async function saveItem(){
   if(ct&&!cd){toast("Pick the constraint date.");$("f_cons_date").focus();return}
   body.cons=ct?{type:ct,date:cd}:null;
   if($("f_cal"))body.calDays=$("f_cal").checked;
-  if($("f_lockos"))body.lockOnsite=$("f_lockos").checked;
+  if($("f_lockos"))body.lockOnsite=$("f_lockos").checked;if($("f_time")){body.time=val("f_time")||"";body.timeEnd=body.time?(val("f_time2")||""):"";if(body.timeEnd&&body.timeEnd<=body.time){toast("The window ends before it starts.");$("f_time2").focus();return}}
   let note="";
   // actual dates win: work that started or finished on a real date sits on that date
   if(body.actualStart&&body.actualStart!==body.start&&kind!=="phase"){body.start=body.actualStart;if(body.end&&dn(body.end)<dn(body.start))body.end=body.start;note=" · start set to its actual start"}
@@ -1421,8 +1421,8 @@ async function deleteItem(id){
 /* ---------- version history ---------- */
 // history/{id}: {projectId, at, by, action, summary, changes:[{coll, id, name, before, after}]}
 // before:null = it was added, after:null = it was deleted, otherwise the changed fields only.
-const TRACK=["name","start","end","status","pct","phaseId","category","sub","contact","notes","onsite","preds","cons","calDays","lockOnsite","actualStart","actualEnd","baseStart","baseEnd"];
-const FIELD_TXT={name:"Name",start:"Start",end:"Finish",status:"Status",pct:"% complete",phaseId:"Phase",category:"Trade",sub:"Subcontractor",contact:"Contact",notes:"Notes",onsite:"On-site dates",preds:"Links",cons:"Constraint",calDays:"Calendar days",lockOnsite:"Sub dates locked",actualStart:"Actual start",actualEnd:"Actual finish",baseStart:"Baseline start",baseEnd:"Baseline finish",title:"Title",date:"Date",itemId:"Linked task",text:"Details",done:"Met",kind:"Type",calendar:"Work calendar",contractValue:"Contract value",retainagePct:"Retainage %",startDate:"Project start",endDate:"Project end",targetFinish:"Contract finish",number:"Job number",client:"Client",address:"Address",super:"Super / PM",activeBaseline:"Active baseline",statusDate:"Status date"};
+const TRACK=["name","start","end","status","pct","phaseId","category","sub","contact","notes","onsite","preds","cons","calDays","lockOnsite","actualStart","actualEnd","baseStart","baseEnd","time","timeEnd"];
+const FIELD_TXT={name:"Name",start:"Start",end:"Finish",status:"Status",pct:"% complete",phaseId:"Phase",category:"Trade",sub:"Subcontractor",contact:"Contact",notes:"Notes",onsite:"On-site dates",preds:"Links",cons:"Constraint",calDays:"Calendar days",lockOnsite:"Sub dates locked",actualStart:"Actual start",actualEnd:"Actual finish",baseStart:"Baseline start",baseEnd:"Baseline finish",title:"Title",date:"Date",itemId:"Linked task",text:"Details",done:"Met",kind:"Type",calendar:"Work calendar",contractValue:"Contract value",retainagePct:"Retainage %",startDate:"Project start",endDate:"Project end",targetFinish:"Contract finish",number:"Job number",client:"Client",address:"Address",super:"Super / PM",activeBaseline:"Active baseline",statusDate:"Status date",time:"Time",timeEnd:"Window ends"};
 const same=(a,b)=>JSON.stringify(a==null?null:a)===JSON.stringify(b==null?null:b);
 const snapItem=i=>{const o={};TRACK.concat(["kind","projectId"]).forEach(k=>{if(i[k]!==undefined)o[k]=i[k]});return o};
 function itemChange(prev,next){
@@ -1438,7 +1438,7 @@ function fmtVal(k,v){
   if(v==null||v==="")return "—";
   if(["start","end","actualStart","actualEnd","baseStart","baseEnd","date","startDate","endDate","targetFinish","statusDate"].includes(k))return fmtY(dn(v));
   if(k==="preds")return (v||[]).length?v.map(p=>{const l=typeof p==="string"?{id:p,type:"FS",lag:0}:p;return linkLabel(l,S.items.find(i=>i.id===l.id))}).join("; "):"none";
-  if(k==="onsite")return plural((v||[]).length,"day");
+  if(k==="time"||k==="timeEnd")return fmtT(v);if(k==="onsite")return plural((v||[]).length,"day");
   if(k==="cons")return ({SNET:"Start no earlier than ",MSO:"Must start on "}[v.type]||"")+fmt(dn(v.date));
   if(k==="phaseId"||k==="itemId"){const p=S.items.find(i=>i.id===v);return p?p.name:"(removed)"}
   if(k==="activeBaseline"){const b=S.baselines.find(x=>x.id===v);return b?b.name:"—"}
@@ -1710,16 +1710,16 @@ const fileBase=t=>((project()||{}).name+" - "+t+" - "+ds(TODAY)).replace(/[\\/:*
 const pdfTxt=s=>String(s==null?"":s).replace(/◆/g,"*").replace(/→/g,"->").replace(/[‹›]/g,"").replace(/[^\x00-\xFF–—‘’“”…•]/g,"");
 function exportData(view){
   const byId=new Map(S.items.map(i=>[i.id,i]));const p=project()||{};
-  const schedHead=["Item","Type","Subcontractor","Start","Finish","Duration (days)","Depends on","Float (days)","Status","% complete","Baseline start","Baseline finish","Slip (days)"];
+  const schedHead=["Item","Type","Subcontractor","Start","Time","Finish","Duration (days)","Depends on","Float (days)","Status","% complete","Baseline start","Baseline finish","Slip (days)"];
   const schedRows=()=>orderedRows(false).filter(r=>r.it).map(r=>{const it=r.it,x=info(it),fl=floatOf(it);
-    return [(r.lvl?"   ":"")+(it.kind==="milestone"?"◆ ":"")+it.name,KIND_LABEL[it.kind],it.sub||"",xDate(x.s),it.kind==="milestone"?"":xDate(x.e),x.s!=null&&x.e!=null&&it.kind!=="milestone"?(it.calDays?x.e-x.s+1:Math.max(1,workdaysBetween(nextWorkday(x.s),x.e)+1)):"",linksOf(it).map(l=>linkLabel(l,byId.get(l.id))).join("; "),fl==null?"":fl,x.late?"Late":(it.status||"Not started"),it.kind==="milestone"?"":(it.status==="Complete"?100:Number(it.pct)||0),xDate(x.bs),it.kind==="milestone"?"":xDate(x.be),x.slip||0]});
+    return [(r.lvl?"   ":"")+(it.kind==="milestone"?"◆ ":"")+it.name,KIND_LABEL[it.kind],it.sub||"",xDate(x.s),timeTxt(it),it.kind==="milestone"?"":xDate(x.e),x.s!=null&&x.e!=null&&it.kind!=="milestone"?(it.calDays?x.e-x.s+1:Math.max(1,workdaysBetween(nextWorkday(x.s),x.e)+1)):"",linksOf(it).map(l=>linkLabel(l,byId.get(l.id))).join("; "),fl==null?"":fl,x.late?"Late":(it.status||"Not started"),it.kind==="milestone"?"":(it.status==="Complete"?100:Number(it.pct)||0),xDate(x.bs),it.kind==="milestone"?"":xDate(x.be),x.slip||0]});
   if(view==="gantt")return {title:"Schedule",gantt:true,sheets:[{name:"Schedule",head:schedHead,rows:schedRows()}]};
   if(view==="list"){const sr=schedRows();return {title:"Task list",sheets:[{name:"Task list",head:schedHead.concat(["Trade","Contact","On-site dates"]),rows:orderedRows(false).filter(r=>r.it).map((r,i)=>sr[i].concat([r.it.category||"",r.it.contact||"",(r.it.onsite||[]).map(d=>fmt(dn(d))).join(", ")]))}]}}
   const dayRows=(from,to)=>{const out=[];for(let n=from;n<=to;n++){
     if(CAL.hol.has(n))out.push([xDate(n),"Holiday",CAL.hol.get(n),""]);
-    entriesOn(n).forEach(e=>{const it=e.itemId&&byId.get(e.itemId);out.push([xDate(n),e.kind==="deadline"?"Deadline ("+ENTRY_TXT[entryState(e)].toLowerCase()+")":"Note",e.title,(it?it.name+(e.text?" · ":""):"")+(e.text||"")])});
-    S.items.forEach(it=>{const x=info(it);if(it.kind==="milestone"&&x.s===n)out.push([xDate(n),"Milestone",it.name,it.sub||""]);
-      if(it.kind==="task"){if(x.s===n)out.push([xDate(n),"Task starts",it.name,it.sub||""]);if(x.e===n&&x.e!==x.s)out.push([xDate(n),"Task finishes",it.name,it.sub||""])}
+    entriesOn(n).forEach(e=>{const it=e.itemId&&byId.get(e.itemId);out.push([xDate(n),e.kind==="deadline"?"Deadline ("+ENTRY_TXT[entryState(e)].toLowerCase()+")":"Note",(timeTxt(e)?timeTxt(e)+" ":"")+e.title,(it?it.name+(e.text?" · ":""):"")+(e.text||"")])});
+    S.items.forEach(it=>{const x=info(it);if(it.kind==="milestone"&&x.s===n)out.push([xDate(n),"Milestone",(timeTxt(it)?timeTxt(it)+" ":"")+it.name,it.sub||""]);
+      if(it.kind==="task"){if(x.s===n)out.push([xDate(n),"Task starts",(timeTxt(it)?timeTxt(it)+" ":"")+it.name,it.sub||""]);if(x.e===n&&x.e!==x.s)out.push([xDate(n),"Task finishes",it.name,it.sub||""])}
       if((it.onsite||[]).includes(ds(n)))out.push([xDate(n),"Sub on site",it.sub||"Crew",it.name])})}
     return out};
   if(view==="calendar"){const mk=S.calMonth||monthKey(TODAY);const [y,m]=mk.split("-").map(Number);const f=Math.round(Date.UTC(y,m-1,1)/DAY),l=Math.round(Date.UTC(y,m,0)/DAY);
