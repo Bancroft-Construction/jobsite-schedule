@@ -239,9 +239,12 @@ td.num,th.num{text-align:right}
 .crew-lucas{--crew:#f57c00}
 .crew-jason{--crew:#2c8a57}
 .crew-both{--crew:#1e73d8}
-.cal-bar.crew-lucas,.cal-bar.crew-jason,.cal-bar.crew-both{border-left-color:var(--crew);background:color-mix(in srgb,var(--crew) 55%,var(--panel))}
-.cal-bar.crew-lucas .dim,.cal-bar.crew-jason .dim,.cal-bar.crew-both .dim{color:inherit;opacity:.85}
-button.chip.crew-lucas,button.chip.crew-jason,button.chip.crew-both{border-left:3px solid var(--crew);background:color-mix(in srgb,var(--crew) 30%,var(--panel));color:var(--ink)}
+.crew-paul{--crew:#8aa4b8}
+.crew-shannon{--crew:#d4879a}
+.crew-ps{--crew:#87a67f}
+.cal-bar.crew-lucas,.cal-bar.crew-jason,.cal-bar.crew-both,.cal-bar.crew-paul,.cal-bar.crew-shannon,.cal-bar.crew-ps{border-left-color:var(--crew);background:color-mix(in srgb,var(--crew) 55%,var(--panel))}
+.cal-bar.crew-lucas .dim,.cal-bar.crew-jason .dim,.cal-bar.crew-both .dim,.cal-bar.crew-paul .dim,.cal-bar.crew-shannon .dim,.cal-bar.crew-ps .dim{color:inherit;opacity:.85}
+button.chip.crew-lucas,button.chip.crew-jason,button.chip.crew-both,button.chip.crew-paul,button.chip.crew-shannon,button.chip.crew-ps{border-left:3px solid var(--crew);background:color-mix(in srgb,var(--crew) 30%,var(--panel));color:var(--ink)}
 .chip.dl{background:var(--panel-2);border-left:3px solid var(--ink);color:var(--ink);font-weight:600}
 .chip.dl.missed,.chip.dl.overdue{background:var(--bad-soft);border-left-color:var(--bad);color:var(--bad)}
 .chip.dl.done{background:var(--good-soft);border-left-color:var(--good);color:var(--good);text-decoration:line-through}
@@ -715,14 +718,26 @@ const entriesOn=n=>S.entries.filter(e=>dn(e.date)===n).sort((a,b)=>(a.kind===b.k
 /* ---------- calendar (month) ---------- */
 // Carpenter calendar colors, on the Bancroft Carpentry project only: Lucas orange, Jason green, both together blue.
 // Names are read from the subcontractor and task name; the contact counts only when neither of those has a name.
-const CREW={lucas:{key:"lucas",rgb:[245,124,0]},jason:{key:"jason",rgb:[44,138,87]},both:{key:"both",rgb:[30,115,216]}};
+// Paul / Shannon colors, on every project: a name starting with Paul is Mist, starting with Shannon is Rose,
+// and an item naming both of them is Sage. Lucas/Jason colors still win on the Bancroft Carpentry project.
+const CREW={lucas:{key:"lucas",rgb:[245,124,0]},jason:{key:"jason",rgb:[44,138,87]},both:{key:"both",rgb:[30,115,216]},
+  paul:{key:"paul",rgb:[138,164,184]},shannon:{key:"shannon",rgb:[212,135,154]},ps:{key:"ps",rgb:[135,166,127]}};
 const crewProject=()=>/\bbancroft\s+carpentry\b/i.test((project()||{}).name||"");
+function paulShannonOf(it){
+  const n=String(it.name||"").trim();
+  const p=/\bpaul\b/i.test(n),s=/\bshannon\b/i.test(n);
+  if(p&&s)return CREW.ps;
+  if(/^paul\b/i.test(n))return CREW.paul;
+  if(/^shannon\b/i.test(n))return CREW.shannon;
+  return null;
+}
+const psInProject=()=>{const k={};S.items.forEach(i=>{const c=paulShannonOf(i);if(c)k[c.key]=1});return k};
 function crewOf(it){
-  if(!crewProject())return null;
+  if(!crewProject())return paulShannonOf(it);
   const has=t=>({l:/\bluc[au]s\b/i.test(t),j:/\bjason\b/i.test(t)});
   let w=has([it.sub,it.name].filter(Boolean).join(" "));
   if(!w.l&&!w.j)w=has(it.contact||"");
-  return w.l&&w.j?CREW.both:w.l?CREW.lucas:w.j?CREW.jason:null;
+  return w.l&&w.j?CREW.both:w.l?CREW.lucas:w.j?CREW.jason:paulShannonOf(it);
 }
 const crewClass=it=>{const c=crewOf(it);return c?" crew-"+c.key:""};
 function calendarHTML(){
@@ -752,7 +767,7 @@ function calendarHTML(){
       h+='<button type="button" class="cal-bar '+stClass(it)+(x.late?" late":"")+(it.kind==="phase"?" ph":"")+crewClass(it)+'" data-open="'+esc(it.id)+'" style="top:'+(28+sg.l*22)+"px;left:calc("+(sg.a/7*100).toFixed(4)+"% + 3px);width:calc("+((sg.b-sg.a+1)/7*100).toFixed(4)+'% - 6px)" title="'+esc(it.name+(it.sub?" · "+it.sub:"")+" — "+fmt(x.s)+" to "+fmt(x.e))+'">'+(sg.cl?"‹ ":timeTag(it))+esc(it.name)+(it.sub?' <span class="dim">· '+esc(it.sub)+"</span>":"")+(sg.cr?" ›":"")+"</button>"});
     h+="</div>";
   }
-  h+='</div></div><div class="legend"><span><i class="sw" style="background:color-mix(in srgb,var(--steel) 30%,var(--panel));border-left:3px solid var(--steel)"></i>Task (color = status)</span>'+(crewProject()?'<span><i class="sw" style="background:color-mix(in srgb,#f57c00 55%,var(--panel));border-left:3px solid #f57c00"></i>Lucas</span><span><i class="sw" style="background:color-mix(in srgb,#2c8a57 55%,var(--panel));border-left:3px solid #2c8a57"></i>Jason</span><span><i class="sw" style="background:color-mix(in srgb,#1e73d8 55%,var(--panel));border-left:3px solid #1e73d8"></i>Jason &amp; Lucas</span>':"")+'<span><i class="sw" style="background:var(--bad-soft);border-left:3px solid var(--bad)"></i>Deadline the schedule misses or is past due</span><span><i class="sw" style="background:var(--panel-2);border-left:3px solid var(--ink)"></i>Upcoming deadline</span><span><i class="sw" style="background:var(--warn-soft);border-left:3px solid var(--warn)"></i>Note</span><span><i class="sw" style="background:var(--accent)"></i>Sub on site</span><span><i class="sw" style="background:var(--steel)"></i>◆ Milestone</span></div></div>';
+  h+='</div></div><div class="legend"><span><i class="sw" style="background:color-mix(in srgb,var(--steel) 30%,var(--panel));border-left:3px solid var(--steel)"></i>Task (color = status)</span>'+(crewProject()?'<span><i class="sw" style="background:color-mix(in srgb,#f57c00 55%,var(--panel));border-left:3px solid #f57c00"></i>Lucas</span><span><i class="sw" style="background:color-mix(in srgb,#2c8a57 55%,var(--panel));border-left:3px solid #2c8a57"></i>Jason</span><span><i class="sw" style="background:color-mix(in srgb,#1e73d8 55%,var(--panel));border-left:3px solid #1e73d8"></i>Jason &amp; Lucas</span>':"")+(()=>{const k=psInProject(),sw=(c,l)=>'<span><i class="sw" style="background:color-mix(in srgb,'+c+' 55%,var(--panel));border-left:3px solid '+c+'"></i>'+l+"</span>";return (k.paul?sw("#8aa4b8","Paul"):"")+(k.shannon?sw("#d4879a","Shannon"):"")+(k.ps?sw("#87a67f","Paul &amp; Shannon"):"")})()+'<span><i class="sw" style="background:var(--bad-soft);border-left:3px solid var(--bad)"></i>Deadline the schedule misses or is past due</span><span><i class="sw" style="background:var(--panel-2);border-left:3px solid var(--ink)"></i>Upcoming deadline</span><span><i class="sw" style="background:var(--warn-soft);border-left:3px solid var(--warn)"></i>Note</span><span><i class="sw" style="background:var(--accent)"></i>Sub on site</span><span><i class="sw" style="background:var(--steel)"></i>◆ Milestone</span></div></div>';
   return h;
 }
 function dayForm(d){
