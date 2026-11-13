@@ -28,7 +28,14 @@ Bancroft Construction's shared job schedule. See `README.md` for features and on
 On the project whose name contains "Bancroft Carpentry", calendar bars, on-site chips, notes and the
 calendar PDF are colored by carpenter: Lucas is orange, Jason is green, and both together are blue.
 Names are read from the task's subcontractor and name, with the contact used only when neither has a
-name. The rule is in `crewOf()` in `src/app.html`. Every other project keeps its status colors.
+name. The rule is in `crewOf()` in `src/app.html`.
+
+## Calendar colors (Paul and Shannon, every project)
+
+On every project, a task whose name starts with "Paul" is Mist (#8aa4b8), one that starts with "Shannon"
+is Rose (#d4879a), and one whose name has both of them is Sage (#87a67f). Only the task name is read.
+The rule is `paulShannonOf()` in `src/app.html`; on Bancroft Carpentry the Lucas/Jason colors win.
+Tasks that match neither rule keep their status colors.
 
 ## Related site
 
