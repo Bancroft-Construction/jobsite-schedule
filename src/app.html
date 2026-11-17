@@ -794,7 +794,7 @@ function entryForm(d){
   h+='<div class="fld"><label for="en_text">Details</label><textarea id="en_text"'+dis+">"+esc(v.text||"")+"</textarea></div>";
   h+='<label class="chk" id="en_doneWrap"'+(v.kind==="deadline"?"":" hidden")+'><input type="checkbox" id="en_done"'+(v.done?" checked":"")+dis+"> Deadline met</label>";
   h+="</form>";
-  h+='<div class="df">'+(e&&!ro?'<button type="button" class="btn danger" data-act="delEntry">Delete</button>':"<span></span>")+'<span class="inl"><button type="button" class="btn" data-act="close">'+(ro?"Close":"Cancel")+"</button>"+(ro?"":'<button type="button" class="btn primary" data-act="saveEntry">'+(e?"Save":"Add")+"</button>")+"</span></div>";
+  h+='<div class="df">'+(e&&!ro?'<span class="inl"><button type="button" class="btn danger" data-act="delEntry">Delete</button><button type="button" class="btn" data-act="entryToTask" title="Turn this '+(v.kind==="deadline"?"deadline":"note")+' into a task on the schedule. The title, date, time and details carry over.">Convert to task</button></span>':"<span></span>")+'<span class="inl"><button type="button" class="btn" data-act="close">'+(ro?"Close":"Cancel")+"</button>"+(ro?"":'<button type="button" class="btn primary" data-act="saveEntry">'+(e?"Save":"Add")+"</button>")+"</span></div>";
   return h;
 }
 async function saveEntry(){
@@ -808,6 +808,53 @@ async function saveEntry(){
     if(e){await S.db.doc("entries/"+e.id).update(body);const b0={},a0={};["kind","title","date","itemId","text","done","time","timeEnd"].forEach(k=>{if(!same(e[k],body[k])){b0[k]=e[k]??null;a0[k]=body[k]}});if(Object.keys(a0).length)await logHistory("entry","Edited "+(kind==="deadline"?"deadline":"note")+" "+title,[{coll:"entries",id:e.id,name:title,before:b0,after:a0}])}
     else{const full=Object.assign(body,{projectId:S.pid,createdAt:Date.now(),createdBy:S.uid||null});const ref=await S.db.collection("entries").add(full);await logHistory("entry","Added "+(kind==="deadline"?"deadline":"note")+" "+title,[{coll:"entries",id:ref.id,name:title,before:null,after:full}])}
     closeDrawer();toast((kind==="deadline"?"Deadline":"Note")+(e?" saved":" added"));
+  }catch(err){dbErr(err)}
+}
+
+/* ---------- convert between notes and tasks ---------- */
+// Note or deadline -> task: a one-day task on the entry's date (next working day if that isn't one),
+// in the phase of the task it was linked to. A note that was converted from a task gets that task's phase,
+// trade, sub and notes back (and its finish, if the date wasn't changed). The entry is removed.
+// Undo from History -> Restore.
+async function entryToTask(){
+  const e=S.entries.find(x=>x.id===S.drawer.id);if(!e)return;
+  const linked=e.itemId&&S.items.find(i=>i.id===e.itemId);
+  const n0=dn(e.date)!=null?dn(e.date):TODAY;const n=nextWorkday(n0);const d=ds(n);
+  const was=e.fromTask||null;const end=was&&was.start===e.date&&was.end&&dn(was.end)>=n?was.end:d;
+  const body={kind:"task",projectId:S.pid,name:e.title,phaseId:was&&phases().some(p=>p.id===was.phaseId)?was.phaseId:(linked?(linked.kind==="phase"?linked.id:(linked.phaseId||"")):""),
+    category:was?was.category||"":"",sub:was?was.sub||"":"",contact:was?was.contact||"":"",calDays:!!(was&&was.calDays),
+    start:d,end,baseStart:d,baseEnd:end,status:"Not started",pct:0,notes:was&&was.text===e.text?was.notes||"":e.text||"",onsite:[],preds:[],cons:null,time:e.time||"",timeEnd:e.timeEnd||"",createdAt:Date.now(),...stamp()};
+  const what=e.kind==="deadline"?"deadline":"note";
+  try{
+    const ref=await S.db.collection("items").add(body);
+    await S.db.doc("entries/"+e.id).delete();
+    const {id:_i,...rest}=e;
+    await logHistory("add","Converted "+what+" "+e.title+" to a task",[{coll:"items",id:ref.id,name:body.name,before:null,after:snapItem(body)},{coll:"entries",id:e.id,name:e.title,before:rest,after:null}]);
+    closeDrawer();toast("Converted to a task"+(n!==n0?" · moved to "+fmt(n)+", the next working day":""));
+    // open the new task so its duration, sub and links can be filled in
+    for(let k=0;k<30&&!S.items.some(i=>i.id===ref.id);k++)await new Promise(r=>setTimeout(r,100));
+    if(!S.drawer&&S.items.some(i=>i.id===ref.id)){$("drawer").dataset.sig="";openDrawer({type:"item",id:ref.id})}
+  }catch(err){dbErr(err)}
+}
+// Task -> note: a note on the task's start date. Sub/contact and a multi-day span are kept in the note's
+// details, and the task's phase, trade and sub are kept on the note (fromTask) for converting back. Like deleting the task, notes linked to it are unlinked and links pointing at it are dropped.
+async function itemToNote(){
+  const it=S.items.find(i=>i.id===S.drawer.id);if(!it||it.kind!=="task")return;
+  const id=it.id;
+  const extra=[it.sub?"Sub: "+it.sub+(it.contact?" · "+it.contact:""):(it.contact?"Contact: "+it.contact:""),
+    it.start&&it.end&&it.end!==it.start?"Was scheduled "+fmt(dn(it.start))+" – "+fmt(dn(it.end)):""];
+  const full={projectId:S.pid,kind:"note",title:it.name,date:it.start||ds(TODAY),itemId:"",text:[it.notes||""].concat(extra).filter(Boolean).join("\n"),
+    done:false,time:it.time||"",timeEnd:it.timeEnd||"",createdAt:Date.now(),createdBy:S.uid||null,...stamp()};
+  full.fromTask={phaseId:it.phaseId||"",category:it.category||"",sub:it.sub||"",contact:it.contact||"",start:full.date,end:it.end||"",calDays:!!it.calDays,notes:it.notes||"",text:full.text};
+  try{
+    const ref=await S.db.collection("entries").add(full);
+    const {id:_i,...rest}=it;
+    const ch=[{coll:"entries",id:ref.id,name:full.title,before:null,after:full},{coll:"items",id,name:it.name,before:rest,after:null}];
+    await S.db.doc("items/"+id).delete();
+    for(const e of S.entries)if(e.itemId===id){await S.db.doc("entries/"+e.id).update({itemId:""});ch.push({coll:"entries",id:e.id,name:e.title,before:{itemId:id},after:{itemId:""}})}
+    for(const s of S.items)if(s.id!==id&&predIds(s).includes(id)){const np=(s.preds||[]).filter(p=>(typeof p==="string"?p:p.id)!==id);await S.db.doc("items/"+s.id).update({preds:np});ch.push(itemChange(s,{preds:np}))}
+    await logHistory("delete","Converted task "+it.name+" to a note",ch);
+    closeDrawer();toast("Converted to a note");
   }catch(err){dbErr(err)}
 }
 
@@ -907,7 +954,7 @@ function itemForm(d){
     if(it.updatedAt)h+='<p class="hint" style="margin:0">Last updated '+new Date(it.updatedAt).toLocaleString()+(it.updatedBy?" by "+esc(nameOf(it.updatedBy)):"")+"</p>";
   }
   h+="</form>";
-  h+='<div class="df">'+(it&&!ro?'<button type="button" class="btn danger" data-act="delItem">Delete</button>':"<span></span>")+'<span class="inl"><button type="button" class="btn" data-act="close">'+(ro?"Close":"Cancel")+"</button>"+(ro?"":'<button type="button" class="btn primary" data-act="saveItem">'+(it?"Save changes":"Add "+KIND_LABEL[kind].toLowerCase())+"</button>")+"</span></div>";
+  h+='<div class="df">'+(it&&!ro?'<span class="inl"><button type="button" class="btn danger" data-act="delItem">Delete</button>'+(kind==="task"?'<button type="button" class="btn" data-act="itemToNote" title="Turn this task into a note on its start date. The name, time, notes and sub carry over; its links and on-site dates are removed.">Convert to note</button>':"")+"</span>":"<span></span>")+'<span class="inl"><button type="button" class="btn" data-act="close">'+(ro?"Close":"Cancel")+"</button>"+(ro?"":'<button type="button" class="btn primary" data-act="saveItem">'+(it?"Save changes":"Add "+KIND_LABEL[kind].toLowerCase())+"</button>")+"</span></div>";
   S.drawer.onsite=(v.onsite||[]).slice();
   S.drawer.preds=linksOf(v).filter(l=>S.items.some(i=>i.id===l.id));
   return h;
@@ -2193,6 +2240,8 @@ document.addEventListener("click",e=>{
   else if(act==="holAdd"){const dd=val("hol_d");if(!dd){toast("Pick the holiday date.");return}const nm=val("hol_n")||"Holiday";S.drawer.cal.holidays=S.drawer.cal.holidays.filter(h=>h.date!==dd).concat([{date:dd,name:nm}]);$("hol_d").value="";$("hol_n").value="";renderHolidays()}
   else if(act==="holUS"){const have=new Set(S.drawer.cal.holidays.map(h=>h.date));US_HOLIDAYS.forEach(([dd,nm])=>{if(!have.has(dd))S.drawer.cal.holidays.push({date:dd,name:nm})});renderHolidays();toast("Added US holidays. Save the project to apply them.")}
   else if(act==="delEntry")confirmClick(a,"de","Click again to delete",async()=>{try{const en0=S.entries.find(x=>x.id===S.drawer.id);await S.db.doc("entries/"+S.drawer.id).delete();if(en0){const {id:_i,...rest}=en0;await logHistory("entry","Deleted "+(en0.kind==="deadline"?"deadline":"note")+" "+en0.title,[{coll:"entries",id:en0.id,name:en0.title,before:rest,after:null}])}closeDrawer();toast("Deleted")}catch(err){dbErr(err)}});
+  else if(act==="entryToTask"){a.disabled=true;entryToTask()}
+  else if(act==="itemToNote"){const it=S.items.find(i=>i.id===S.drawer.id);const ties=it?predIds(it).length+successorsOf(it.id).length+(it.onsite||[]).length:0;confirmClick(a,"tn",ties?"Click again: removes its links and on-site dates":"Click again to convert",()=>{a.disabled=true;itemToNote()})}
   else if(act==="newproj"){$("drawer").dataset.sig="";openDrawer({type:"project"})}
   else if(act==="sample"){a.disabled=true;a.textContent="Loading sample…";loadSample()}
   else if(act==="logdelay"){if(!S.items.length){toast("Add items to the schedule first.");return}$("drawer").dataset.sig="";openDrawer({type:"logdelay"})}
