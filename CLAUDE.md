@@ -37,6 +37,13 @@ is Rose (#d4879a), and one whose name has both of them is Sage (#87a67f). Only t
 The rule is `paulShannonOf()` in `src/app.html`; on Bancroft Carpentry the Lucas/Jason colors win.
 Tasks that match neither rule keep their status colors.
 
+## Highlight colors (picked by hand)
+
+Any task, milestone, phase, note or deadline can be given a highlighter color from the **Highlight**
+dropdown in its drawer (10 colors, list `HL` in `src/app.html`, stored as field `hl`). It only marks the
+name, like a highlighter pen, in the Gantt, task list, calendar, look-ahead and day view. It never
+changes dates, status colors or the crew colors above. It's for the project manager's own color-coding.
+
 ## Related site
 
 The Staffing Planner (https://bancroft-construction.github.io/staffing-planner/) exports
