@@ -230,7 +230,7 @@ td.num,th.num{text-align:right}
 .cal-dn{font-family:var(--f-mono);font-size:12px;color:var(--muted);align-self:flex-start;height:20px;line-height:20px;padding:0 4px}
 .cal-day.td .cal-dn{background:var(--accent);color:var(--accent-ink);border-radius:10px;padding:0 7px;font-weight:500}
 .cal-lanes{flex:none}
-.cal-bar{position:absolute;height:19px;line-height:19px;border:0;border-left:3px solid var(--bar);border-radius:3px;background:color-mix(in srgb,var(--bar) 24%,var(--panel));color:var(--ink);font-size:12px;padding:0 6px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;z-index:1}
+.cal-bar{position:absolute;min-height:19px;line-height:15px;border:0;border-left:3px solid var(--bar);border-radius:3px;background:color-mix(in srgb,var(--bar) 24%,var(--panel));color:var(--ink);font-size:12px;padding:2px 6px;text-align:left;white-space:normal;overflow-wrap:anywhere;cursor:pointer;z-index:1}
 .cal-bar.st-prog{border-left-color:var(--steel);background:color-mix(in srgb,var(--steel) 22%,var(--panel))}
 .cal-bar.st-done{border-left-color:var(--good);background:color-mix(in srgb,var(--good) 20%,var(--panel))}
 .cal-bar.st-hold{border-left-color:var(--warn);background:color-mix(in srgb,var(--warn) 20%,var(--panel))}
@@ -530,7 +530,7 @@ function renderMain(){
   else if(S.view==="list")m.innerHTML=listHTML();
   else if(S.view==="delays")m.innerHTML=delaysHTML();
   else if(S.view==="billing")m.innerHTML=billingHTML();
-  else if(S.view==="calendar")m.innerHTML=calendarHTML();
+  else if(S.view==="calendar"){m.innerHTML=calendarHTML();layoutCalBars()}
   else if(S.view==="history")m.innerHTML=historyHTML();
   else m.innerHTML=aheadHTML();
   if(S.view==="gantt")scrollGanttToToday();
@@ -781,12 +781,24 @@ function calendarHTML(){
       h+='<div class="cal-day'+(n<first||n>last?" out":"")+(d===0||d===6?" we":"")+(CAL.hol.has(n)?" holday":"")+(n===TODAY?" td":"")+'" data-calday="'+ds(n)+'"><span class="cal-dn">'+(date.getUTCDate()===1?fmt(n):date.getUTCDate())+'</span><div class="cal-lanes" style="height:'+(lanes.length*22)+'px"></div>'+chips+"</div>";
     }
     segs.forEach(sg=>{const it=sg.it,x=info(it);
-      h+='<button type="button" class="cal-bar '+stClass(it)+(x.late?" late":"")+(it.kind==="phase"?" ph":"")+crewClass(it)+'" data-open="'+esc(it.id)+'" style="top:'+(28+sg.l*22)+"px;left:calc("+(sg.a/7*100).toFixed(4)+"% + 3px);width:calc("+((sg.b-sg.a+1)/7*100).toFixed(4)+'% - 6px)" title="'+esc(it.name+(it.sub?" · "+it.sub:"")+" — "+fmt(x.s)+" to "+fmt(x.e))+'">'+(sg.cl?"‹ ":timeTag(it))+hl(it,esc(it.name))+(it.sub?' <span class="dim">· '+esc(it.sub)+"</span>":"")+(sg.cr?" ›":"")+"</button>"});
+      h+='<button type="button" class="cal-bar '+stClass(it)+(x.late?" late":"")+(it.kind==="phase"?" ph":"")+crewClass(it)+'" data-open="'+esc(it.id)+'" data-lane="'+sg.l+'" style="top:'+(28+sg.l*22)+"px;left:calc("+(sg.a/7*100).toFixed(4)+"% + 3px);width:calc("+((sg.b-sg.a+1)/7*100).toFixed(4)+'% - 6px)" title="'+esc(it.name+(it.sub?" · "+it.sub:"")+" — "+fmt(x.s)+" to "+fmt(x.e))+'">'+(sg.cl?"‹ ":timeTag(it))+hl(it,esc(it.name))+(it.sub?' <span class="dim">· '+esc(it.sub)+"</span>":"")+(sg.cr?" ›":"")+"</button>"});
     h+="</div>";
   }
   h+='</div></div><div class="legend"><span><i class="sw" style="background:color-mix(in srgb,var(--steel) 30%,var(--panel));border-left:3px solid var(--steel)"></i>Task (color = status)</span>'+(crewProject()?'<span><i class="sw" style="background:color-mix(in srgb,#f57c00 55%,var(--panel));border-left:3px solid #f57c00"></i>Lucas</span><span><i class="sw" style="background:color-mix(in srgb,#2c8a57 55%,var(--panel));border-left:3px solid #2c8a57"></i>Jason</span><span><i class="sw" style="background:color-mix(in srgb,#1e73d8 55%,var(--panel));border-left:3px solid #1e73d8"></i>Jason &amp; Lucas</span>':"")+(()=>{const k=psInProject(),sw=(c,l)=>'<span><i class="sw" style="background:color-mix(in srgb,'+c+' 55%,var(--panel));border-left:3px solid '+c+'"></i>'+l+"</span>";return (k.paul?sw("#8aa4b8","Paul"):"")+(k.shannon?sw("#d4879a","Shannon"):"")+(k.ps?sw("#87a67f","Paul &amp; Shannon"):"")})()+'<span><i class="sw" style="background:var(--bad-soft);border-left:3px solid var(--bad)"></i>Deadline the schedule misses or is past due</span><span><i class="sw" style="background:var(--panel-2);border-left:3px solid var(--ink)"></i>Upcoming deadline</span><span><i class="sw" style="background:var(--warn-soft);border-left:3px solid var(--warn)"></i>Note</span><span><i class="sw" style="background:var(--accent)"></i>Sub on site</span><span><i class="sw" style="background:var(--steel)"></i>◆ Milestone</span></div></div>';
   return h;
 }
+// Task text wraps, so each lane is as tall as its tallest bar; restack the lanes after render.
+function layoutCalBars(){
+  document.querySelectorAll(".cal-week").forEach(wk=>{
+    const bars=[...wk.querySelectorAll(".cal-bar")];if(!bars.length)return;
+    const hs=[];bars.forEach(b=>{const l=+b.dataset.lane;hs[l]=Math.max(hs[l]||0,b.offsetHeight)});
+    const tops=[];let y=0;for(let l=0;l<hs.length;l++){tops[l]=y;y+=(hs[l]||19)+3}
+    bars.forEach(b=>{const l=+b.dataset.lane;b.style.top=(28+tops[l])+"px";b.style.height=(hs[l]||19)+"px"});
+    wk.querySelectorAll(".cal-lanes").forEach(c=>c.style.height=y+"px");
+  });
+}
+let calResizeT;
+addEventListener("resize",()=>{if(S.view!=="calendar")return;clearTimeout(calResizeT);calResizeT=setTimeout(()=>{document.querySelectorAll(".cal-bar").forEach(b=>b.style.height="");layoutCalBars()},100)});
 function dayForm(d){
   const n=dn(d.date);const ro=!S.canWrite;
   const act=S.items.filter(i=>{if(i.kind==="phase")return false;const {s,e}=spanOf(i);return s!=null&&s<=n&&e>=n});
