@@ -48,3 +48,11 @@ changes dates, status colors or the crew colors above. It's for the project mana
 
 The Staffing Planner (https://bancroft-construction.github.io/staffing-planner/) exports
 `schedule-board.csv`, which this board reads with **Import from planner** (`projectsFromSheets`).
+
+## Brand colors and chart colors
+
+The board uses the Bancroft brand palette (Marble #FFFCFA, Stone #E7E3DD, Copper #8A5D3B, Granite #252928,
+Slate #ACACAC) in the `:root` variables of `src/app.html`. The Gantt and calendar panels are the exception:
+they carry class `chart-std`, which keeps them white with traditional status colors (gray not started,
+blue in progress, green complete, amber on hold, red critical/late, red today line) in light and dark mode.
+The PDF export (`drawGanttPDF`, `drawCalendarPDF`) uses the same colors.

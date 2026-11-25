@@ -14,17 +14,17 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="config.js"></script>
 <style>
-#authGate{position:fixed;inset:0;z-index:100;background:var(--bg,#eceff1);display:flex;align-items:center;justify-content:center;padding:16px}
+#authGate{position:fixed;inset:0;z-index:100;background:var(--bg,#e7e3dd);display:flex;align-items:center;justify-content:center;padding:16px}
 #authGate[hidden]{display:none}
-#authGate form{background:var(--panel,#fff);border:1px solid var(--line,#d3d9de);border-radius:10px;padding:28px 26px;width:min(380px,100%);display:flex;flex-direction:column;gap:14px;box-shadow:0 12px 40px rgba(20,30,40,.12)}
+#authGate form{background:var(--panel,#fffcfa);border:1px solid var(--line,#dcd5cf);border-radius:10px;padding:28px 26px;width:min(380px,100%);display:flex;flex-direction:column;gap:14px;box-shadow:0 12px 40px rgba(37,41,40,.12)}
 #authGate h1{margin:0;font-size:28px}
 #authGate .mark{width:100%;height:8px;min-height:0;align-self:auto;border-radius:2px}
-#authGate label{display:flex;flex-direction:column;gap:5px;font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted,#5b6670);font-weight:600}
+#authGate label{display:flex;flex-direction:column;gap:5px;font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted,#6c6763);font-weight:600}
 #authGate input{font-size:15px;text-transform:none;letter-spacing:0;font-weight:400}
-#authGate .err{color:var(--bad,#c62828);font-size:14px;min-height:1em;margin:0}
-#authBar{position:fixed;right:12px;bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:15;font-size:12px;color:var(--muted,#5b6670);background:var(--panel,#fff);border:1px solid var(--line,#d3d9de);border-radius:16px;padding:3px 4px 3px 12px;display:flex;gap:8px;align-items:center}
+#authGate .err{color:var(--bad,#b23a3a);font-size:14px;min-height:1em;margin:0}
+#authBar{position:fixed;right:12px;bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:15;font-size:12px;color:var(--muted,#6c6763);background:var(--panel,#fffcfa);border:1px solid var(--line,#dcd5cf);border-radius:16px;padding:3px 4px 3px 12px;display:flex;gap:8px;align-items:center}
 #authBar[hidden]{display:none}
-#authBar button{border:0;background:var(--panel-2,#f6f8f9);border-radius:12px;padding:3px 10px;cursor:pointer;font:inherit;color:var(--ink,#1b2126)}
+#authBar button{border:0;background:var(--panel-2,#f3efeb);border-radius:12px;padding:3px 10px;cursor:pointer;font:inherit;color:var(--ink,#252928)}
 </style>
 <div id="authGate" hidden>
   <form id="authForm" autocomplete="on">
@@ -149,25 +149,25 @@ document.addEventListener("click",async e=>{if(e.target.id==="authOut"){await sb
 <style>
 /* Layout: job header + KPI strip, then tabbed work surface (Gantt / list / delay log / look-ahead); editing happens in a right-side drawer. */
 :root{
-  --bg:#e7e2de; --panel:#fdf9f6; --panel-2:#f5f0ec; --ink:#25292a; --muted:#6c6763; --line:#dcd5cf;
-  --accent:#8a5d3b; --accent-soft:#efe3d8; --accent-ink:#fdf9f6;
-  --steel:#5e7778; --bar:#aaaaaa; --base:#d3cbc4; --good:#66704f; --warn:#94606f; --bad:#b23a3a; --bad-soft:#f4e1de; --warn-soft:#f1e6e9; --good-soft:#e9ebe2;
-  --wknd:#f2ede9; --grid:#e9e3de; --shadow:0 12px 40px rgba(37,41,42,.16);
+  --bg:#e7e3dd; --panel:#fffcfa; --panel-2:#f3efeb; --ink:#252928; --muted:#6c6763; --line:#dcd5cf;
+  --accent:#8a5d3b; --accent-soft:#efe3d8; --accent-ink:#fffcfa;
+  --steel:#5e7778; --bar:#acacac; --base:#d3cbc4; --good:#66704f; --warn:#94606f; --bad:#b23a3a; --bad-soft:#f4e1de; --warn-soft:#f1e6e9; --good-soft:#e9ebe2;
+  --wknd:#f2ede9; --grid:#e9e3de; --shadow:0 12px 40px rgba(37,41,40,.16);
   --f-display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
   --f-body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
   --f-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
   --lw:250px;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#1d2021; --panel:#25292a; --panel-2:#212526; --ink:#f3eeea; --muted:#aba6a1; --line:#3a3f40;
-  --accent:#c08a5f; --accent-soft:#3a2c22; --accent-ink:#1d2021;
-  --steel:#aebbbb; --bar:#7d7d7d; --base:#4a4f50; --good:#adb09e; --warn:#cab3b9; --bad:#e07070; --bad-soft:#3a2222; --warn-soft:#3a2f33; --good-soft:#2e3229;
-  --wknd:#212526; --grid:#2f3435; --shadow:0 12px 40px rgba(0,0,0,.5); color-scheme:dark}}
+  --bg:#1d201f; --panel:#252928; --panel-2:#212524; --ink:#f3eeea; --muted:#aba6a1; --line:#3a3f3e;
+  --accent:#c08a5f; --accent-soft:#3a2c22; --accent-ink:#1d201f;
+  --steel:#aebbbb; --bar:#7d7d7d; --base:#4a4f4e; --good:#adb09e; --warn:#cab3b9; --bad:#e07070; --bad-soft:#3a2222; --warn-soft:#3a2f33; --good-soft:#2e3229;
+  --wknd:#212524; --grid:#2f3433; --shadow:0 12px 40px rgba(0,0,0,.5); color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#1d2021; --panel:#25292a; --panel-2:#212526; --ink:#f3eeea; --muted:#aba6a1; --line:#3a3f40;
-  --accent:#c08a5f; --accent-soft:#3a2c22; --accent-ink:#1d2021;
-  --steel:#aebbbb; --bar:#7d7d7d; --base:#4a4f50; --good:#adb09e; --warn:#cab3b9; --bad:#e07070; --bad-soft:#3a2222; --warn-soft:#3a2f33; --good-soft:#2e3229;
-  --wknd:#212526; --grid:#2f3435; --shadow:0 12px 40px rgba(0,0,0,.5); color-scheme:dark}
+  --bg:#1d201f; --panel:#252928; --panel-2:#212524; --ink:#f3eeea; --muted:#aba6a1; --line:#3a3f3e;
+  --accent:#c08a5f; --accent-soft:#3a2c22; --accent-ink:#1d201f;
+  --steel:#aebbbb; --bar:#7d7d7d; --base:#4a4f4e; --good:#adb09e; --warn:#cab3b9; --bad:#e07070; --bad-soft:#3a2222; --warn-soft:#3a2f33; --good-soft:#2e3229;
+  --wknd:#212524; --grid:#2f3433; --shadow:0 12px 40px rgba(0,0,0,.5); color-scheme:dark}
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45}
 button,input,select,textarea{font:inherit;color:inherit}
@@ -267,6 +267,13 @@ textarea{width:100%;min-height:70px;resize:vertical}
 .legend span{display:inline-flex;align-items:center;gap:6px}
 .sw{display:inline-block;width:18px;height:9px;border-radius:2px}
 
+/* Gantt and calendar: white background and traditional status colors in light and dark mode (brand colors everywhere else) */
+.chart-std{--panel:#ffffff;--panel-2:#f5f5f5;--ink:#202124;--muted:#5f6368;--line:#dadce0;--grid:#ececec;--wknd:#f7f7f7;
+  --bar:#9aa0a6;--steel:#1a73e8;--good:#1e8e3e;--warn:#f29900;--bad:#d93025;--base:#c4c7c5;
+  --good-soft:#e6f4ea;--warn-soft:#fef3e0;--bad-soft:#fce8e6;--accent:#8a5d3b;--accent-soft:#efe3d8;--accent-ink:#ffffff;
+  background:var(--panel);color:var(--ink);border-color:var(--line);color-scheme:light}
+.chart-std .today,.chart-std .today-lab,.chart-std .cal-day.td .cal-dn{background:#d93025;color:#fff}
+.chart-std .flag.warn{color:#b06000}
 /* list table */
 .tblwrap{overflow-x:auto}
 table{border-collapse:collapse;width:100%;font-size:14px}
@@ -310,7 +317,7 @@ td.num,th.num{text-align:right}
 @media (max-width:760px){.days{grid-template-columns:minmax(0,1fr)}.day{min-height:0;flex-direction:row;flex-wrap:wrap;align-items:center}.day .dn{width:80px}.day.emptyday{display:none}}
 
 /* drawer */
-#drawerBack{position:fixed;inset:0;background:rgba(10,15,20,.35);z-index:20}
+#drawerBack{position:fixed;inset:0;background:rgba(37,41,40,.4);z-index:20}
 #drawer{position:fixed;top:0;right:0;bottom:0;width:min(520px,100vw);background:var(--panel);z-index:21;box-shadow:var(--shadow);display:flex;flex-direction:column;border-left:1px solid var(--line)}
 .dh{padding:14px 18px;padding-top:calc(14px + env(safe-area-inset-top,0px));border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
 .dh h2{font-family:var(--f-display);font-size:24px;margin:0;line-height:1.1}
@@ -394,7 +401,7 @@ button.chip.crew-lucas,button.chip.crew-jason,button.chip.crew-both,button.chip.
 .chip.dl.done{background:var(--good-soft);border-left-color:var(--good);color:var(--good);text-decoration:line-through}
 .chip.nt{background:var(--warn-soft);border-left:3px solid var(--warn);color:var(--ink)}
 /* highlighter colors picked on a task or note (field hl); text stays dark so it reads in light and dark mode */
-mark.hl{background:var(--hl);color:#1d2021;border-radius:3px;padding:0 3px;-webkit-box-decoration-break:clone;box-decoration-break:clone}
+mark.hl{background:var(--hl);color:#1d201f;border-radius:3px;padding:0 3px;-webkit-box-decoration-break:clone;box-decoration-break:clone}
 mark.hl .dim,mark.hl .bad-t{color:inherit;opacity:.8}.tm{font-family:var(--f-mono);font-weight:600;font-size:.9em;white-space:nowrap}
 .dlm{position:absolute;top:5px;bottom:5px;width:2px;background:var(--ink);cursor:pointer;z-index:2}
 .dlm::after{content:"";position:absolute;top:0;left:2px;border-left:8px solid currentColor;border-top:4px solid transparent;border-bottom:4px solid transparent;color:var(--ink)}
@@ -764,7 +771,7 @@ function ganttHTML(){
   let hols="";CAL.hol.forEach((name,n)=>{if(n>=a&&n<=b)hols+='<div class="hol" style="left:calc(var(--lw) + '+((n-a)*dw)+'px);width:'+Math.max(2,dw)+'px" title="'+esc(name+" · "+fmt(n))+'"></div>'});
   links+=hols;
   const key=S.pid+S.zoom;
-  return '<div class="panel"><div class="gwrap" id="gwrap" data-key="'+esc(key)+'" data-tx="'+tx+'"><div class="ghead"><div class="glabel">Phase / task</div><div class="gtrack" style="width:'+W+'px">'+hd+'</div></div><div style="position:relative">'+rows+links+'<div class="today" style="left:calc(var(--lw) + '+(tx-1)+'px)"></div></div></div>'+
+  return '<div class="panel chart-std"><div class="gwrap" id="gwrap" data-key="'+esc(key)+'" data-tx="'+tx+'"><div class="ghead"><div class="glabel">Phase / task</div><div class="gtrack" style="width:'+W+'px">'+hd+'</div></div><div style="position:relative">'+rows+links+'<div class="today" style="left:calc(var(--lw) + '+(tx-1)+'px)"></div></div></div>'+
     '<div class="legend"><span><i class="sw" style="background:var(--bar)"></i>Not started</span><span><i class="sw" style="background:var(--steel)"></i>In progress</span><span><i class="sw" style="background:var(--good)"></i>Complete</span><span><i class="sw" style="background:var(--warn)"></i>On hold</span><span><i class="sw" style="background:var(--base);height:4px"></i>Baseline (original plan)</span><span><i class="sw" style="background:var(--accent);height:5px"></i>Sub committed on site</span><span><i class="sw" style="box-shadow:0 0 0 2px var(--bad);background:transparent"></i>Late</span><span>→ Linked: finish-to-start, start-to-start or finish-to-finish</span>'+(S.showCrit?'<span><i class="sw" style="background:var(--bad)"></i>Critical path (0 days of float)</span>':"")+(CAL.hol.size?'<span><i class="sw hatch"></i>Holiday</span>':"")+'<span>Active baseline: '+esc(activeBaselineName())+'</span><span><i class="sw" style="width:3px;height:12px;background:var(--ink)"></i>Deadline (red when missed)</span><span><i class="sw" style="width:10px;height:10px;background:var(--warn)"></i>Note</span></div></div>';
 }
 function scrollGanttToToday(){
@@ -894,7 +901,7 @@ const crewClass=it=>{const c=crewOf(it);return c?" crew-"+c.key:""};
 const HL=[["yellow","Yellow","#fff176"],["orange","Orange","#ffc680"],["pink","Pink","#f9b8dc"],["red","Red","#f29a9a"],["purple","Purple","#cfb2f2"],
   ["blue","Blue","#9fcdf7"],["teal","Teal","#8de0d5"],["green","Green","#a6e3a1"],["brown","Brown","#d9bf9f"],["gray","Gray","#cdd2d4"]];
 const HL_BY=Object.fromEntries(HL.map(h=>[h[0],h]));
-const HL_INK="#1d2021";
+const HL_INK="#1d201f";
 const hl=(o,html)=>{const c=o&&HL_BY[o.hl];return c?'<mark class="hl" style="--hl:'+c[2]+'">'+html+"</mark>":html};
 function hlSelect(id,v,dis){
   const c=HL_BY[v];
@@ -906,7 +913,7 @@ function calendarHTML(){
   const first=Math.round(Date.UTC(y,m-1,1)/DAY),last=Math.round(Date.UTC(y,m,0)/DAY);
   const g0=sunday(first),g1=sunday(last)+6;
   const bars=S.items.filter(i=>i.kind==="task"||(S.calPhases&&i.kind==="phase"));
-  let h='<div class="panel"><h2 class="ph-h">'+esc(keyLabel(mk,true))+'<span class="hint" style="font-family:var(--f-body);font-weight:500">Click a day to see everything on it or add a task, deadline or note</span></h2><div class="calwrap"><div class="cal"><div class="cal-head">'+["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(d=>"<div>"+d+"</div>").join("")+"</div>";
+  let h='<div class="panel chart-std"><h2 class="ph-h">'+esc(keyLabel(mk,true))+'<span class="hint" style="font-family:var(--f-body);font-weight:500">Click a day to see everything on it or add a task, deadline or note</span></h2><div class="calwrap"><div class="cal"><div class="cal-head">'+["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(d=>"<div>"+d+"</div>").join("")+"</div>";
   for(let w=g0;w<=g1;w+=7){
     // lay task bars into lanes for this week
     const segs=[];
@@ -1865,7 +1872,7 @@ function drawGanttPDF(doc,y0){
   const head=()=>{doc.setFontSize(6.5);doc.setTextColor(91,102,112);doc.setDrawColor(211,217,222);doc.setLineWidth(0.4);
     for(let n=a;n<=b;n++){const d=new Date(n*DAY);if(d.getUTCDate()===1||n===a){doc.line(sx(n),y,sx(n),y+11);doc.text(pdfTxt(d.toLocaleDateString(undefined,{month:"short",year:"2-digit",timeZone:"UTC"})),sx(n)+2,y+8)}}
     y+=13;top=y};
-  const today=()=>{if(TODAY>=a&&TODAY<=b){doc.setDrawColor(226,85,11);doc.setLineWidth(0.9);doc.line(sx(TODAY),top,sx(TODAY),y);doc.setLineWidth(0.4)}};
+  const today=()=>{if(TODAY>=a&&TODAY<=b){doc.setDrawColor(217,48,37);doc.setLineWidth(0.9);doc.line(sx(TODAY),top,sx(TODAY),y);doc.setLineWidth(0.4)}};
   head();
   rows.forEach(r=>{
     if(y+rh>PH-30){today();doc.addPage();y=36;head()}
@@ -1877,7 +1884,7 @@ function drawGanttPDF(doc,y0){
     if(x.s!=null){
       if(x.bs!=null&&x.be!=null&&it.kind!=="milestone"){doc.setFillColor(195,204,211);doc.rect(sx(x.bs),y+8.5,Math.max(1,sx(x.be+1)-sx(x.bs)),1.8,"F")}
       const crit=isCritical(it);
-      const c=crit&&it.kind!=="phase"?[198,40,40]:({"In progress":[58,102,136],"Complete":[44,138,87],"On hold":[185,127,0]}[it.status]||(it.kind==="phase"?[27,33,38]:[158,171,182]));
+      const c=crit&&it.kind!=="phase"?[217,48,37]:({"In progress":[26,115,232],"Complete":[30,142,62],"On hold":[242,153,0]}[it.status]||(it.kind==="phase"?[27,33,38]:[154,160,166]));
       doc.setFillColor(c[0],c[1],c[2]);
       if(it.kind==="milestone"){const cx=(sx(x.s)+sx(x.s+1))/2,cy=y+5.5;doc.triangle(cx-3.5,cy,cx,cy-3.5,cx+3.5,cy,"F");doc.triangle(cx-3.5,cy,cx,cy+3.5,cx+3.5,cy,"F")}
       else doc.rect(sx(x.s),y+2.5,Math.max(1.5,sx(x.e+1)-sx(x.s)),it.kind==="phase"?4:5.5,"F");
@@ -1887,9 +1894,9 @@ function drawGanttPDF(doc,y0){
   });
   today();
   y+=10;doc.setFontSize(7);doc.setTextColor(91,102,112);
-  const leg=[[[158,171,182],"Not started"],[[58,102,136],"In progress"],[[44,138,87],"Complete"],[[185,127,0],"On hold"],[[198,40,40],"Critical path"],[[195,204,211],"Baseline"]];
+  const leg=[[[154,160,166],"Not started"],[[26,115,232],"In progress"],[[30,142,62],"Complete"],[[242,153,0],"On hold"],[[217,48,37],"Critical path"],[[195,204,211],"Baseline"]];
   let lx=L;leg.forEach(([c,t])=>{doc.setFillColor(c[0],c[1],c[2]);doc.rect(lx,y-5,10,5,"F");doc.text(t,lx+13,y);lx+=doc.getTextWidth(t)+30});
-  doc.setDrawColor(226,85,11);doc.setLineWidth(0.9);doc.line(lx,y-6,lx,y+1);doc.setLineWidth(0.4);doc.text("Today",lx+4,y);
+  doc.setDrawColor(217,48,37);doc.setLineWidth(0.9);doc.line(lx,y-6,lx,y+1);doc.setLineWidth(0.4);doc.text("Today",lx+4,y);
   return y;
 }
 function drawCalendarPDF(doc,y0,g){
@@ -1905,8 +1912,8 @@ function drawCalendarPDF(doc,y0,g){
     doc.setFontSize(7.5);doc.setTextColor(n<g.first||n>g.last?170:27);doc.setFont("helvetica",n===TODAY?"bold":"normal");doc.text(String(new Date(n*DAY).getUTCDate()),x+3,y+9);
     const lines=[];
     if(CAL.hol.has(n))lines.push([[110,110,110],CAL.hol.get(n)]);
-    entriesOn(n).forEach(e=>lines.push([e.kind==="deadline"?(["missed","overdue"].includes(entryState(e))?[198,40,40]:[27,33,38]):[185,127,0],(e.kind==="deadline"?"Due: ":"Note: ")+e.title]));
-    S.items.forEach(it=>{const x0=info(it);if(it.kind==="milestone"&&x0.s===n)lines.push([[58,102,136],"* "+it.name]);
+    entriesOn(n).forEach(e=>lines.push([e.kind==="deadline"?(["missed","overdue"].includes(entryState(e))?[217,48,37]:[27,33,38]):[176,96,0],(e.kind==="deadline"?"Due: ":"Note: ")+e.title]));
+    S.items.forEach(it=>{const x0=info(it);if(it.kind==="milestone"&&x0.s===n)lines.push([[26,115,232],"* "+it.name]);
       const crew=crewOf(it);
       if(it.kind==="task"&&x0.s===n)lines.push([crew?crew.rgb:[27,33,38],"Start: "+it.name]);if(it.kind==="task"&&x0.e===n&&x0.e!==x0.s)lines.push([crew?crew.rgb:[91,102,112],"Finish: "+it.name]);
       if((it.onsite||[]).includes(ds(n)))lines.push([crew?crew.rgb:[226,85,11],"On site: "+(it.sub||it.name)])});
